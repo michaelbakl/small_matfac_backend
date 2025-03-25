@@ -1,0 +1,15 @@
+package app.core.repository.subject
+
+import app.core.filter.SubjectFilter
+import ru.baklykov.app.core.model.Subject
+import java.time.LocalDateTime
+import java.util.*
+
+interface ISubjectRepository {
+    fun addSubject(subject: Subject): Int
+    fun updateSubject(subject: Subject): Int
+    fun delete(id: UUID): Int
+    fun getById(id: UUID): Subject?
+    fun getByFilter(filter: SubjectFilter): List<Subject>
+    fun getAll(): List<Subject>
+}
