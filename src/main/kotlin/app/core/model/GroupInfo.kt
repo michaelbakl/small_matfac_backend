@@ -1,7 +1,7 @@
 package ru.baklykov.app.core.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
 data class GroupInfo (
@@ -13,7 +13,7 @@ data class GroupInfo (
     val name: String,
 
     @JsonProperty
-    val dateOfCreating: LocalDateTime,
+    val dateOfCreating: ZonedDateTime,
 
     @JsonProperty
     val teacherId: UUID,

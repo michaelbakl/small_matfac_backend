@@ -1,6 +1,5 @@
 package ru.baklykov.app.core.model
 
-import ru.baklykov.app.core.model.game.Game
 import java.util.*
 
 data class Room (
@@ -9,5 +8,6 @@ data class Room (
     val teacherId: UUID,
     val students: List<UUID>,
     val isClosed: Boolean,
-    val games: List<Game> ?= listOf()
+    val games: List<UUID> ?= listOf(),
+    val dateOfCreating: String
 )
