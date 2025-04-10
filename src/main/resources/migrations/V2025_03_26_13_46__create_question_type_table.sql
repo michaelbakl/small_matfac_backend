@@ -1,0 +1,5 @@
+CREATE TYPE question_type AS ENUM (
+    'SINGLE_CHOICE',
+    'MULTIPLE_CHOICE',
+    'OPEN_ANSWER'
+);
