@@ -4,11 +4,13 @@ import app.core.converter.ITripleConverter
 import ru.baklykov.app.core.model.game.DifficultyLevel
 import ru.baklykov.app.core.model.game.Game
 import ru.baklykov.app.core.model.game.GameType
+import ru.baklykov.app.web.model.request.game.CreateGameRequest
 import ru.baklykov.app.web.model.response.game.GetGameInfoResponse
+import java.time.ZonedDateTime
 import java.util.ArrayList
 
-object GameConverter: ITripleConverter<Game, AddGameRequest, GetGameInfoResponse> {
-    override fun convertToModel(obj: AddGameRequest): Game {
+object GameConverter: ITripleConverter<Game, CreateGameRequest, GetGameInfoResponse> {
+    override fun convertToModel(obj: CreateGameRequest): Game {
         TODO("Not yet implemented")
     }
 
@@ -31,8 +33,8 @@ object GameConverter: ITripleConverter<Game, AddGameRequest, GetGameInfoResponse
             obj.config.allowSkips,
             obj.config.enableHints,
             obj.status,
-            obj.startDate,
-            obj.finishDate,
+            obj.config.startDate?: ZonedDateTime.now(),
+            obj.config.finishDate?: ZonedDateTime.now(),
             obj.studentsAnswers,
             obj.studentsResults
         )

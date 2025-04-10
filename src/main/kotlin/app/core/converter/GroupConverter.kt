@@ -2,19 +2,21 @@ package app.core.converter
 
 import app.web.model.request.group.AddGroupRequest
 import app.web.model.response.group.GetGroupInfoResponse
+import ru.baklykov.app.core.converter.ZonedDateConverter
 import ru.baklykov.app.core.model.GroupInfo
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
+//TODO: finish
 object GroupConverter: ITripleConverter<GroupInfo, AddGroupRequest, GetGroupInfoResponse> {
     override fun convertToModel(obj: AddGroupRequest): GroupInfo {
         return GroupInfo(
             UUID.randomUUID(),
             obj.name,
-            LocalDateConverter.convert(obj.dateOfCreating) ?: LocalDateTime.MIN,
-            UUID.fromString(obj.facultyId),
+            ZonedDateConverter.convert(obj.dateOfCreating)?: ZonedDateTime.now(),
+            UUID.randomUUID(),
             listOf(),
-            obj.semesterNum
+            obj.classNum
         )
     }
 

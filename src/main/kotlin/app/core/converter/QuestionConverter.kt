@@ -1,7 +1,8 @@
 package ru.baklykov.app.core.converter
 
 import app.core.converter.ITripleConverter
-import ru.baklykov.app.core.model.Question
+import ru.baklykov.app.core.model.question.Question
+import ru.baklykov.app.web.model.request.question.AddQuestionRequest
 import ru.baklykov.app.web.model.response.question.GetQuestionInfoResponse
 import java.util.ArrayList
 

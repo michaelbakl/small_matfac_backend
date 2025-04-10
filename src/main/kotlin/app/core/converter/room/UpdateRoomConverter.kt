@@ -26,7 +26,7 @@ object UpdateRoomConverter:ITripleConverter<Room, UpdateRoomRequest, GetRoomInfo
             obj.teacherId,
             obj.students,
             obj.isClosed,
-            GameConverter.convertToResponseList(obj.games)
+            obj.games?: listOf()
         )
     }
 
