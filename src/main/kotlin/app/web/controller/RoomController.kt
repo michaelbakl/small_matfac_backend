@@ -18,6 +18,7 @@ import ru.baklykov.app.core.filter.RoomFilter
 import ru.baklykov.app.core.service.game.IGameService
 import ru.baklykov.app.core.service.room.IRoomService
 import ru.baklykov.app.web.model.request.game.CreateGameRequest
+import ru.baklykov.app.web.model.request.game.UpdateDatesInGameRequest
 import ru.baklykov.app.web.model.request.room.AddParticipantsToRoomRequest
 import ru.baklykov.app.web.model.request.room.AddRoomRequest
 import ru.baklykov.app.web.model.request.room.UpdateParticipantsInRoomRequest
@@ -25,7 +26,6 @@ import ru.baklykov.app.web.model.request.room.UpdateRoomRequest
 import ru.baklykov.app.web.model.response.game.GetGameInfoResponse
 import ru.baklykov.app.web.model.response.room.GetRoomInfoResponse
 import java.time.format.DateTimeParseException
-import java.util.UUID
 
 @RestController
 @RequestMapping("/rooms")
@@ -316,15 +316,12 @@ class RoomController(private val roomService: IRoomService, private val gameServ
         }
     }
 
-
-
-    // TODO: подумать над временем начала игры (возможно, сюда заложить отложенный старт)
-
     @PostMapping(path = ["/{roomId}/games/{gameId}/start"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
     fun startGameByTeacherByTime(
         @RequestParam("roomId") roomId: String,
         @RequestParam("gameId") gameId: String,
+        @RequestBody request: UpdateDatesInGameRequest
     ): ResponseEntity<CommonResponse<GetGameInfoResponse>> {
         try {
             if (!IdValidator.validate(roomId) || !IdValidator.validate(gameId)) {
@@ -335,12 +332,17 @@ class RoomController(private val roomService: IRoomService, private val gameServ
             if (!roomService.checkGameExists(roomId, gameId)) {
                 return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body(CommonResponse(true, "Game does not exist", ""))
+                    .body(CommonResponse(true, "Game does not exist in the room", ""))
             }
+            val startDate = ZonedDateConverter.convert(request.startDate)
+            val finishDate = ZonedDateConverter.convert(request.finishDate)
 
             val response = if (!gameService.checkGameStarted(roomId, gameId)) {
                 gameService.startGameInRoom(roomId, gameId)
             } else {
+                if (startDate != null && finishDate != null) {
+                    gameService.changeGameDates(roomId, gameId, startDate, finishDate)
+                }
                 gameService.getGameById(roomId, gameId)
             }
 
@@ -377,7 +379,7 @@ class RoomController(private val roomService: IRoomService, private val gameServ
                     .body(CommonResponse(true, "Id is not UUID", ""))
             }
 
-            val response = gameService.createGame(GameConfigConverter.convert(request))
+            val response = gameService.createGame(roomId, request.name, GameConfigConverter.convert(request), request.categories)
 
             return ResponseEntity
                 .ok()
