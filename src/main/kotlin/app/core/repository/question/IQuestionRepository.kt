@@ -1,6 +1,6 @@
 package ru.baklykov.app.core.repository.question
 
-import ru.baklykov.app.core.model.Question
+import ru.baklykov.app.core.model.question.Question
 import java.util.*
 
 interface IQuestionRepository {
@@ -31,7 +31,7 @@ interface IQuestionRepository {
      * @param questionId - id pf the question to find
      * @return question
      */
-    fun getQuestionById(questionId: UUID): Question
+    fun getQuestionById(questionId: UUID): Question?
 
     /**
      * finds questions that fit the params
@@ -40,14 +40,16 @@ interface IQuestionRepository {
      * @param title - question title
      * @param description - question description
      * @param themes - question themes
+     * @param
      * @return list of suitable questions
      */
     fun getQuestionWithParams(
-        questionId: UUID?,
-        ownerId: UUID?,
-        title: String?,
-        description: String?,
-        themes: List<UUID>? = listOf()
+        questionId: UUID? = null,
+        ownerId: UUID? = null,
+        title: String? = null,
+        description: String? = null,
+        themes: List<UUID>? = listOf(),
+        themesStr: String? = "*",
     ): List<Question>
 
     /**
@@ -64,4 +66,11 @@ interface IQuestionRepository {
      * @return 1 if removed, 0 otherwise
      */
     fun removeAnswerFromQuestion(questionId: UUID, answerId: UUID): Int
+
+    /**
+     * checks if question exists in database
+     * @param questionId
+     * @return true if exists, false otherwise
+     */
+    fun existsById(questionId: UUID): Boolean
 }
