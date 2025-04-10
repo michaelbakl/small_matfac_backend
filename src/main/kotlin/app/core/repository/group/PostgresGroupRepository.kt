@@ -10,6 +10,8 @@ import org.springframework.jdbc.core.RowMapper
 import ru.baklykov.app.core.model.GroupInfo
 import java.sql.ResultSet
 import java.sql.Timestamp
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.*
 
 class PostgresGroupRepository(private val jdbcOperations: JdbcOperations) : IGroupRepository {
@@ -54,7 +56,7 @@ class PostgresGroupRepository(private val jdbcOperations: JdbcOperations) : IGro
                 GroupInfo(
                     UUID.fromString(resultSet.getString("groupId")),
                     resultSet.getString("name"),
-                    resultSet.getTimestamp("dateOfCreating").toLocalDateTime(),
+                    ZonedDateTime.ofInstant(resultSet.getTimestamp("dateOfCreating").toInstant(), ZoneId.systemDefault()),
                     UUID.fromString(resultSet.getString("facultyId")),
                     // TODO: assistants
                     listOf(),
@@ -93,7 +95,7 @@ class PostgresGroupRepository(private val jdbcOperations: JdbcOperations) : IGro
                 GetGroupInfoResponse(
                     UUID.fromString(resultSet.getString("groupId")),
                     resultSet.getString("name"),
-                    resultSet.getTimestamp("dateOfCreating").toLocalDateTime(),
+                    ZonedDateTime.ofInstant(resultSet.getTimestamp("dateOfCreating").toInstant(), ZoneId.systemDefault()),
                     resultSet.getInt("classNum")
                 )
             }
