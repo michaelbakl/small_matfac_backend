@@ -2,6 +2,7 @@ package ru.baklykov.app.core.service.game
 
 import ru.baklykov.app.core.model.game.GameConfig
 import ru.baklykov.app.web.model.response.game.GetGameInfoResponse
+import java.time.ZonedDateTime
 
 interface IGameService {
 
@@ -15,10 +16,13 @@ interface IGameService {
 
     /**
      * creates game by game configuration
+     * @param roomId - uuid of the room
+     * @param name - name of the game
      * @param gameConfig - game configuration
+     * @param categories - categories for questions
      * @return game info response
      */
-    fun createGame(gameConfig: GameConfig): GetGameInfoResponse
+    fun createGame(roomId: String, name: String, gameConfig: GameConfig, categories: String): GetGameInfoResponse
 
     /**
      * deletes game from the server. Game is removed from every room it is played
@@ -32,7 +36,7 @@ interface IGameService {
      * @param questions - list of questions ids to add to the game
      * @return game info response
      */
-    fun addQuestionsToTheGame(questions: List<String>): GetGameInfoResponse
+    fun addQuestionsToTheGame(roomId: String, gameId: String, questions: List<String>): GetGameInfoResponse
 
     /**
      * checks if game is started
@@ -50,5 +54,14 @@ interface IGameService {
      */
     fun getGameById(roomId: String, gameId: String): GetGameInfoResponse
 
+    /**
+     * updates game start and finish dates.
+     * If start date is null then start date is now, and finish date is 30 minutes from now (if finish date also null).
+     * @param roomId - uuid of room
+     * @param gameId - uuid of game
+     * @param startDate - date of game start
+     * @param finishDate - date of game finish
+     */
+    fun changeGameDates(roomId: String, gameId: String, startDate: ZonedDateTime?, finishDate: ZonedDateTime?): GetGameInfoResponse
 
 }
