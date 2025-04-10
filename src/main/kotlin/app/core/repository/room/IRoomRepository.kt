@@ -1,9 +1,8 @@
 package ru.baklykov.app.core.repository.room
 
-import ru.baklykov.app.core.model.Question
+import ru.baklykov.app.core.model.question.Question
 import ru.baklykov.app.core.model.Room
 import java.time.LocalDateTime
-import java.time.ZonedDateTime
 import java.util.*
 
 interface IRoomRepository {
@@ -13,21 +12,21 @@ interface IRoomRepository {
      * @param room - room to add
      * @return added room
      */
-    fun addRoom(room: Room): Room
+    fun addRoom(room: Room): Int
 
     /**
      * updates room information
      * @param room - room with new information
      * @return updated room with new info
      */
-    fun updateRoom(room: Room): Room
+    fun updateRoom(room: Room): Int
 
     /**
      * finds room by id
      * @param id - UUID of the room
      * @return found room or null
      */
-    fun getRoomById(id: UUID): Room
+    fun getRoomById(id: UUID): Room?
 
     /**
      * @param id - room id
@@ -42,13 +41,13 @@ interface IRoomRepository {
     fun getRoomsWithParams(
         id: UUID?,
         name: String?,
-        teacherId: UUID,
+        teacherId: UUID?,
         students: List<UUID>?,
         questions: List<Question>?,
         isClosed: Boolean?,
         startDate: LocalDateTime?,
         finishDate: LocalDateTime?
-    )
+    ): List<Room>
 
     /**
      * deletes room by id
@@ -56,15 +55,6 @@ interface IRoomRepository {
      * @return 1 if deleted, 0 if not
      */
     fun deleteRoomById(id: UUID): Int
-
-    /**
-     * updates room dates of starting and finishing
-     * @param roomId - id of the room
-     * @param startDate - date of starting the room
-     * @param finishDate - date when room become unavailable
-     * @return updated room
-     */
-    fun updateRoomDates(roomId: UUID, startDate: ZonedDateTime, finishDate: ZonedDateTime): Int
 
     /**
      * updates room availability
@@ -75,14 +65,6 @@ interface IRoomRepository {
     fun updateRoomAvailability(roomId: UUID, isClosed: Boolean): Int
 
     /**
-     * adds questions to the room
-     * @param roomId - id of the room
-     * @param questionId - question id to add to the room
-     * @return updated room
-     */
-    fun addQuestionToRoom(roomId: UUID, questionId: UUID): Int
-
-    /**
      * adds participant to the room
      * @param roomId - id of the room
      * @param studentId - id of the student to add
@@ -91,35 +73,11 @@ interface IRoomRepository {
     fun addParticipantToRoom(roomId: UUID, studentId: UUID): Int
 
     /**
-     * adds questions to the room
-     * @param roomId - id of the room
-     * @param questionId - question id to remove to the room
-     * @return updated room
-     */
-    fun removeQuestionFromRoom(roomId: UUID, questionId: UUID): Int
-
-    /**
      * adds participant to the room
      * @param roomId - id of the room
      * @param studentId - id of the student to remove
      * @return updated room
      */
     fun removeParticipantFromRoom(roomId: UUID, studentId: UUID): Int
-
-    /**
-     * adds existing game to room
-     * @param roomId - id of the room
-     * @param gameId - id of the game to be added to the room
-     * @return 1 if success, 0 otherwise
-     */
-    fun addGameToRoom(roomId: UUID, gameId: UUID): Int
-
-    /**
-     * removes existing game to room
-     * @param roomId - id of the room
-     * @param gameId - id of the game to be added to the room
-     * @return 1 if success, 0 otherwise
-     */
-    fun removeGameFromRoom(roomId: UUID, gameId: UUID): Int
 
 }
