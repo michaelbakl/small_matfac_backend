@@ -6,7 +6,10 @@ import java.time.ZonedDateTime
 data class CreateGameRequest(
 
     @JsonProperty
-    val categories: List<String> ?= listOf(),
+    val categories: String = "",
+
+    @JsonProperty
+    val name: String,
 
     @JsonProperty
     val questionCount: Int ?= 30,
@@ -31,4 +34,5 @@ data class CreateGameRequest(
 
     @JsonProperty
     val startDate: String ?= ZonedDateTime.now().toString()
+
 )

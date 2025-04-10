@@ -8,5 +8,6 @@ data class GetRoomInfoResponse(
     val teacherId: UUID,
     val students: List<UUID>,
     val isClosed: Boolean,
-    val games: List<UUID>
+    val games: List<UUID>,
+    val dateOfCreating: String
 )

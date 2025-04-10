@@ -2,6 +2,7 @@ package app.web.model.response.group
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
 data class GetGroupInfoResponse (
@@ -13,7 +14,7 @@ data class GetGroupInfoResponse (
     val name: String,
 
     @JsonProperty
-    val dateOfCreating: LocalDateTime,
+    val dateOfCreating: ZonedDateTime,
 
     @JsonProperty
     val classNum: Int

@@ -5,7 +5,7 @@ import ru.baklykov.app.core.model.StudentResult
 import ru.baklykov.app.core.model.game.DifficultyLevel
 import ru.baklykov.app.core.model.game.GameType
 import ru.baklykov.app.web.model.response.question.GetQuestionInfoResponse
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
 data class GetGameInfoResponse(
@@ -20,8 +20,8 @@ data class GetGameInfoResponse(
     val allowSkips: Boolean,
     val enableHints: Boolean,
     val status: String,
-    val startDate: LocalDateTime,
-    val finishDate: LocalDateTime?,
+    val startDate: ZonedDateTime,
+    val finishDate: ZonedDateTime?,
     val studentsAnswers: List<StudentAnswer> ?= listOf(),
     val studentsResults: List<StudentResult> ?= listOf(),
 )
