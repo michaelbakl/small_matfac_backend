@@ -10,10 +10,12 @@ import app.web.model.response.group.GetGroupInfoResponse
 import app.web.model.response.group.GetGroupsInfoResponse
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import ru.baklykov.app.core.model.GroupInfo
 import java.sql.Timestamp
 import java.util.*
 
+@Service
 class GroupService(private val repository: IGroupRepository) : IGroupService {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(this::class.java)
@@ -24,7 +26,7 @@ class GroupService(private val repository: IGroupRepository) : IGroupService {
             repository.addGroup(
                 groupInfo.groupId,
                 groupInfo.name,
-                Timestamp.valueOf(groupInfo.dateOfCreating),
+                Timestamp.valueOf(groupInfo.dateOfCreating.toLocalDateTime()),
                 groupInfo.classNum
                 )
             return getGroupById(groupInfo.groupId)
@@ -40,7 +42,7 @@ class GroupService(private val repository: IGroupRepository) : IGroupService {
             repository.updateGroup(
                 groupInfo.groupId,
                 groupInfo.name,
-                Timestamp.valueOf(groupInfo.dateOfCreating),
+                Timestamp.valueOf(groupInfo.dateOfCreating.toLocalDateTime()),
                 groupInfo.classNum
             )
             return getGroupById(groupInfo.groupId)

@@ -5,6 +5,7 @@ import app.core.exception.RepositoryException
 import app.core.exception.ServiceException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.baklykov.app.core.converter.room.RoomConverter
 import ru.baklykov.app.core.filter.RoomFilter
@@ -14,6 +15,7 @@ import ru.baklykov.app.core.repository.room.IRoomRepository
 import ru.baklykov.app.web.model.response.room.GetRoomInfoResponse
 import java.util.*
 
+@Service
 open class RoomService(private val roomRepository: IRoomRepository, private val gameRepository: IGameRepository): IRoomService {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(this::class.java)
@@ -33,16 +35,42 @@ open class RoomService(private val roomRepository: IRoomRepository, private val 
     override fun updateRoom(room: Room): GetRoomInfoResponse {
         LOGGER.debug("SERVICE update room {}", room)
         try {
+
+            //TODO: finish
+
             val oldRoomInfo = roomRepository.getRoomById(room.roomId)
-            if (oldRoomInfo.games?.equals(room.games) != true) {
-                room.games?. let { it.map { game -> {
-                    if (!oldRoomInfo.games?.contains(game)!!) {
-                        gameRepository.addGame(game)
-                    } else {
-                        gameRepository.updateGame(game)
-                    }
-                } } }
-            }
+//            if (oldRoomInfo.games?.equals(room.games) != true) {
+//                room.games?.let {
+//                    it.map { game ->
+//                        {
+//                            if (!oldRoomInfo.games?.contains(game)!!) {
+//                                gameRepository.addGame(game)
+//                            } else {
+//                                gameRepository.updateGame(game)
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+
+//            val currentGames = oldRoomInfo.games?.toSet()
+//            val gamesIds = currentGames
+//
+//            currentGames?.minus(gamesIds?.toSet())?.forEach { gameId ->
+//                roomRepository.removeGameFromRoom(room.roomId, gameId)
+//            }
+//
+//            players.let {
+//                it.map { item ->
+//                    {
+//                        val userId = UUID.fromString(item)
+//                        if (!currentPlayers.contains(userId)) {
+//                            roomRepository.addParticipantToRoom(room.roomId, userId)
+//                        }
+//                    }
+//                }
+//            }
+
             return RoomConverter.convertToResponse(roomRepository.getRoomById(room.roomId))
         } catch (e: RepositoryException) {
             LOGGER.debug("SERVICE error updating room {}", room)
@@ -211,14 +239,8 @@ open class RoomService(private val roomRepository: IRoomRepository, private val 
     override fun checkGameExists(roomId: String, gameId: String): Boolean {
         try {
             LOGGER.debug("SERVICE check game exists in the room {}, {}", roomId, gameId)
-            val room = roomRepository.getRoomById(UUID.fromString(roomId))
-
-
-
-            // TODO: finish method
-
-
-            return true
+            val game = gameRepository.getGameById(UUID.fromString(gameId))
+            return game.roomId.toString() == roomId
         } catch (e: RepositoryException) {
             LOGGER.error("SERVICE error checking game exists in the room {}, {}", roomId, gameId, e)
             throw ServiceException("SERVICE check game exists in the room exception", e)
