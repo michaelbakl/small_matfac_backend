@@ -1,6 +1,7 @@
 package ru.baklykov.app.core.repository.game
 
 import ru.baklykov.app.core.model.game.Game
+import ru.baklykov.app.core.model.game.GameConfig
 import ru.baklykov.app.core.model.game.GameType
 import java.time.ZonedDateTime
 import java.util.*
@@ -12,14 +13,30 @@ interface IGameRepository {
      * @param game - game to add
      * @return added game
      */
-    fun addGame(game: Game): Game
+    fun createGame(game: Game): Int
+
+    /**
+     * adds game configuration to the database
+     * @param gameId - id of the game
+     * @param gameConfig - game configuration
+     * @return 1 if added, 0 otherwise
+     */
+    fun createGameConfig(gameId: UUID, gameConfig: GameConfig): Int
 
     /**
      * updates game information
      * @param game - game with new information
      * @return updated game with new info
      */
-    fun updateGame(game: Game): Game
+    fun updateGame(game: Game): Int
+
+    /**
+     * updates game configuration
+     * @param gameId - id of the game
+     * @param gameConfig - game configuration with new information
+     * @return updated game configuration with new info
+     */
+    fun updateGameConfig(gameId: UUID, gameConfig: GameConfig): Int
 
     /**
      * finds game by id
@@ -45,7 +62,7 @@ interface IGameRepository {
         gameType: GameType?,
         startDate: ZonedDateTime?,
         finishDate: ZonedDateTime?
-    )
+    ): List<Game>
 
     /**
      * deletes game by id
@@ -65,11 +82,11 @@ interface IGameRepository {
 
     /**
      * updates game status
-     * @param roomId - id of the room
+     * @param gameId - id of the game
      * @param status - new status of the game
      * @return 1 if updated, 0 otherwise
      */
-    fun updateGameStatus(roomId: UUID, status: String): Int
+    fun updateGameStatus(gameId: UUID, status: String): Int
 
     /**
      * adds question to game
