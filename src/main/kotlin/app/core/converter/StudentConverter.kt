@@ -1,8 +1,10 @@
-package app.core.converter
+package ru.baklykov.app.core.converter
 
+import app.core.converter.ITripleConverter
 import app.web.model.request.student.AddStudentRequest
 import app.web.model.response.person.GetStudentInfoResponse
-import ru.baklykov.app.core.model.person.Student
+import ru.baklykov.app.core.converter.datetime.ZonedDateConverter
+import app.core.model.person.Student
 import java.util.*
 
 object StudentConverter: ITripleConverter<Student, AddStudentRequest, GetStudentInfoResponse> {
@@ -14,8 +16,8 @@ object StudentConverter: ITripleConverter<Student, AddStudentRequest, GetStudent
             obj.name,
             obj.middleName,
             obj.email,
-            obj.dateOfBirth ?.let { LocalDateConverter.convert(it) },
-            obj.dateOfEntering ?.let { LocalDateConverter.convert(it) },
+            obj.dateOfBirth ?.let { ZonedDateConverter.convert(it) },
+            obj.dateOfEntering ?.let { ZonedDateConverter.convert(it) },
             obj.groups
         )
     }

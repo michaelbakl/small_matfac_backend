@@ -1,13 +1,13 @@
 package ru.baklykov.app.core.converter.room
 
 import app.core.converter.ITripleConverter
-import ru.baklykov.app.core.converter.GameConverter
-import ru.baklykov.app.core.model.Room
-import ru.baklykov.app.web.model.request.room.UpdateRoomRequest
-import ru.baklykov.app.web.model.response.room.GetRoomInfoResponse
+import app.core.exception.ConverterException
+import app.core.model.Room
+import app.web.model.request.room.UpdateRoomRequest
+import app.web.model.response.room.GetRoomInfoResponse
 import java.util.*
 
-object UpdateRoomConverter:ITripleConverter<Room, UpdateRoomRequest, GetRoomInfoResponse> {
+object UpdateRoomConverter : ITripleConverter<Room, UpdateRoomRequest, GetRoomInfoResponse> {
     override fun convertToModel(obj: UpdateRoomRequest): Room {
         return Room(
             UUID.randomUUID(),
@@ -26,7 +26,9 @@ object UpdateRoomConverter:ITripleConverter<Room, UpdateRoomRequest, GetRoomInfo
             obj.teacherId,
             obj.students,
             obj.isClosed,
-            obj.games?: listOf()
+            obj.games ?: listOf(),
+            dateOfCreating = obj.dateOfCreating.toString()
+                ?: throw ConverterException("Cant convert Room to response. dateOfCreating is null")
         )
     }
 

@@ -1,13 +1,13 @@
 package ru.baklykov.app.core.converter.room
 
 import app.core.converter.ITripleConverter
-import ru.baklykov.app.core.converter.GameConverter
-import ru.baklykov.app.core.model.Room
-import ru.baklykov.app.web.model.request.room.AddRoomRequest
-import ru.baklykov.app.web.model.response.room.GetRoomInfoResponse
+import app.core.exception.ConverterException
+import app.core.model.Room
+import app.web.model.request.room.AddRoomRequest
+import app.web.model.response.room.GetRoomInfoResponse
 import java.util.*
 
-object RoomConverter:ITripleConverter<Room, AddRoomRequest, GetRoomInfoResponse> {
+object RoomConverter : ITripleConverter<Room, AddRoomRequest, GetRoomInfoResponse> {
     override fun convertToModel(obj: AddRoomRequest): Room {
         return Room(
             UUID.randomUUID(),
@@ -15,7 +15,8 @@ object RoomConverter:ITripleConverter<Room, AddRoomRequest, GetRoomInfoResponse>
             UUID.fromString(obj.teacherId),
             convertListOfStringsToListOfUUID(obj.students),
             obj.isClosed ?: false,
-            listOf()
+            listOf(),
+            dateOfCreating = null
         )
     }
 
@@ -26,12 +27,16 @@ object RoomConverter:ITripleConverter<Room, AddRoomRequest, GetRoomInfoResponse>
             obj.teacherId,
             obj.students,
             obj.isClosed,
-            obj.games?: listOf()
+            obj.games ?: listOf(),
+            obj.dateOfCreating.toString()
+                ?: throw ConverterException("Cant convert object of class Room to response. dateOfCreating is null")
         )
     }
 
-    override fun convertToResponseList(list: List<Room>?): List<GetRoomInfoResponse>? {
-        TODO("Not yet implemented")
+    override fun convertToResponseList(list: List<Room>?): List<GetRoomInfoResponse> {
+        val result = mutableListOf<GetRoomInfoResponse>()
+        list?.let { it.map { item -> result.add(convertToResponse(item)) } }
+        return result
     }
 
     private fun convertListOfStringsToListOfUUID(list: List<String>): List<UUID> {

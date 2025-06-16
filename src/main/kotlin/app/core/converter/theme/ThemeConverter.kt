@@ -1,8 +1,8 @@
 package ru.baklykov.app.core.converter.theme
 
 import app.core.converter.IConverter
-import ru.baklykov.app.core.model.question.QuestionTheme
-import ru.baklykov.app.web.model.response.theme.ThemeResponse
+import app.core.model.question.QuestionTheme
+import app.web.model.response.theme.ThemeResponse
 
 object ThemeConverter: IConverter<ThemeResponse, QuestionTheme> {
     override fun convert(obj: QuestionTheme): ThemeResponse {
