@@ -16,27 +16,46 @@ class SqlQueryBuilder {
         return this
     }
 
-    fun join(table: String, condition: String?, param: String? = null): SqlQueryBuilder {
-        if (condition != null && condition != "" && param != null) {
-            joins.add("JOIN $table ON $condition")
+    fun join(joinType: String? = "LEFT", table: String, condition: String?, param: String? = null): SqlQueryBuilder {
+        if (!condition.isNullOrEmpty() && param != null) {
+            joins.add("$joinType JOIN $table ON $condition ")
         }
         return this
     }
 
-    fun where(column: String, condition: String?, isAnd: Boolean? = true, operand: String? = "="): SqlQueryBuilder {
+    fun where(column: String, condition: String?, isAnd: Boolean = true, operand: String = "="): SqlQueryBuilder {
         if (condition != null) {
-            if (!whereUsed) {
-                conditions.add("WHERE $column $operand '$condition'")
-                whereUsed = true
-            } else {
-                if (true == isAnd) {
-                    conditions.add("AND $column $operand '$condition'")
-                } else {
-                    conditions.add("OR $column $operand '$condition'")
-                }
-            }
+            addCondition(column, condition, isAnd, operand)
         }
         return this
+    }
+
+    fun whereNotNull(column: String, isAnd: Boolean = true): SqlQueryBuilder {
+        addCondition(column, null, isAnd, "IS NOT NULL", valueEnclosure = false)
+        return this
+    }
+
+    fun whereNull(column: String, isAnd: Boolean = true): SqlQueryBuilder {
+        addCondition(column, null, isAnd, "IS NULL", valueEnclosure = false)
+        return this
+    }
+
+    private fun addCondition(
+        column: String,
+        value: String?,
+        isAnd: Boolean,
+        operand: String,
+        valueEnclosure: Boolean = true
+    ) {
+        val prefix = if (!whereUsed) {
+            whereUsed = true
+            "WHERE "
+        } else {
+            if (isAnd) "AND " else "OR "
+        }
+
+        val conditionValue = if (value != null && valueEnclosure) "'$value'" else value ?: ""
+        conditions.add("$prefix$column $operand $conditionValue")
     }
 
     fun and(condition: String?): SqlQueryBuilder {
@@ -54,10 +73,7 @@ class SqlQueryBuilder {
     }
 
     fun orderBy(column: String, ascending: Boolean = true): SqlQueryBuilder {
-        queryBuilder.append("ORDER BY $column ")
-        if (!ascending) {
-            queryBuilder.append("DESC ")
-        }
+        queryBuilder.append("ORDER BY $column ${if (ascending) "ASC" else "DESC"} ")
         return this
     }
 
@@ -84,6 +100,24 @@ class SqlQueryBuilder {
                 conditions.add("AND $column BETWEEN '$firstCondition' AND '$secondCondition'")
             }
         }
+        return this
+    }
+
+    fun `in`(column: String, values: Collection<String>): SqlQueryBuilder {
+        if (values.isNotEmpty()) {
+            val prefix = if (!whereUsed) {
+                whereUsed = true
+                "WHERE "
+            } else {
+                "AND "
+            }
+            conditions.add("$prefix$column IN (${values.joinToString(", ") { "'$it'" }})")
+        }
+        return this
+    }
+
+    fun apply(block: SqlQueryBuilder.() -> Unit): SqlQueryBuilder {
+        this.block()
         return this
     }
 
