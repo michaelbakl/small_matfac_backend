@@ -11,18 +11,12 @@ import javax.sql.DataSource
 
 
 @Configuration
-open class DatabaseConfig {
-    @Value("\${spring.datasource.driver-class-name}")
-    private val driverClassName: String? = null
-
-    @Value("\${spring.datasource.url}")
-    private val databaseUrl: String? = null
-
-    @Value("\${spring.datasource.username}")
-    private val username: String? = null
-
-    @Value("\${spring.datasource.password}")
-    private val password: String? = null
+open class DatabaseConfig(
+    @Value("\${spring.datasource.driver-class-name}") private val driverClassName: String,
+    @Value("\${spring.datasource.url}") private val databaseUrl: String,
+    @Value("\${spring.datasource.username}") private val username: String,
+    @Value("\${spring.datasource.password}") private val password: String
+) {
 
     /**
      * data source
@@ -32,7 +26,7 @@ open class DatabaseConfig {
     @Primary
     open fun dataSource(): DataSource {
         val dataSource = DriverManagerDataSource()
-        dataSource.setDriverClassName(driverClassName ?: "org.postgresql.Driver")
+        dataSource.setDriverClassName(driverClassName)
         dataSource.url = databaseUrl
         dataSource.username = username
         dataSource.password = password
