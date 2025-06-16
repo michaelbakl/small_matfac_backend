@@ -1,0 +1,20 @@
+server:
+  port: 8080
+
+token:
+  aRefreshTokenDuration: 30
+
+spring:
+  web:
+    resources:
+      add-mappings: false
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+jwt:
+  issuer: ${JWT_ISSUER}
+  signingKey: ${JWT_SECRET}
+  aTokenDuration: ${JWT_DURATION}
