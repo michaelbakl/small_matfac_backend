@@ -1,32 +1,36 @@
 package app.core.service.teacher
 
-import app.core.converter.TeacherConverter
+import ru.baklykov.app.core.converter.teacher.TeacherConverter
 import app.core.exception.NotFoundException
 import app.core.exception.RepositoryException
 import app.core.exception.ServiceException
+import app.core.exception.SignUpException
+import app.core.filter.TeacherFilter
 import app.core.repository.teacher.ITeacherRepository
-import app.core.service.login.LoginService
 import app.web.model.Login
 import app.web.model.response.person.GetTeacherInfoResponse
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import ru.baklykov.app.core.model.person.Teacher
-import java.time.LocalDateTime
+import app.core.model.person.Teacher
+import app.core.service.user.UserRegistrationService
+import java.time.ZonedDateTime
 import java.util.*
 
-open class TeacherService(private val repository: ITeacherRepository, private val loginService: LoginService) : ITeacherService {
+@Service
+open class TeacherService(private val repository: ITeacherRepository, private val registrationService: UserRegistrationService) : ITeacherService {
     private val LOGGER: Logger = LoggerFactory.getLogger(this.javaClass)
 
-    @Transactional
+    @Transactional(rollbackFor = [RepositoryException::class, SignUpException::class])
     override fun createActualTeacher(login: Login, teacher: Teacher): GetTeacherInfoResponse {
         LOGGER.debug("SERVICE add actual teacher {}", teacher)
         try {
             val roles = listOf("USER", "TEACHER")
-            val userId: UUID = loginService.create(login, roles)
+            val userId: UUID = registrationService.create(login, roles)
             val updatedTeacher = teacher.copy(userId = userId)
             repository.addActualTeacher(updatedTeacher)
-            return getActualTeacher(teacher.personId)
+            return getActualTeacher(updatedTeacher.personId)
         } catch (e: RepositoryException) {
             LOGGER.debug("SERVICE error adding actual teacher {}", teacher)
             throw ServiceException("SERVICE add actual teacher exception", e)
@@ -45,7 +49,7 @@ open class TeacherService(private val repository: ITeacherRepository, private va
     }
 
     @Transactional
-    override fun updateActualTeacher(teacher: Teacher, dateOfChanging: LocalDateTime): GetTeacherInfoResponse {
+    override fun updateActualTeacher(teacher: Teacher, dateOfChanging: ZonedDateTime): GetTeacherInfoResponse {
         LOGGER.debug("SERVICE update actual teacher {}", teacher)
         try {
             repository.addHistoryTeacher(teacher, dateOfChanging)
@@ -70,7 +74,7 @@ open class TeacherService(private val repository: ITeacherRepository, private va
 
     @Deprecated("Use only update actual teacher")
     @Transactional
-    override fun addHistoryTeacher(teacher: Teacher, dateOfChanging: LocalDateTime): GetTeacherInfoResponse {
+    override fun addHistoryTeacher(teacher: Teacher, dateOfChanging: ZonedDateTime): GetTeacherInfoResponse {
         LOGGER.debug("SERVICE add history teacher {}, {}", teacher, dateOfChanging)
         try {
             repository.addHistoryTeacher(teacher, dateOfChanging)
@@ -81,7 +85,7 @@ open class TeacherService(private val repository: ITeacherRepository, private va
         }
     }
 
-    override fun getHistoryTeacher(id: UUID, dateOfChanging: LocalDateTime): GetTeacherInfoResponse {
+    override fun getHistoryTeacher(id: UUID, dateOfChanging: ZonedDateTime): GetTeacherInfoResponse {
         LOGGER.debug("SERVICE get history teacher by id {}, {}", id, dateOfChanging)
         try {
             val teacher: Teacher = repository.getHistoryTeacher(id, dateOfChanging) ?: throw NotFoundException("History teacher not found")
@@ -93,7 +97,7 @@ open class TeacherService(private val repository: ITeacherRepository, private va
     }
 
     @Transactional
-    override fun updateHistoryTeacher(teacher: Teacher, dateOfChanging: LocalDateTime, historyId: UUID): GetTeacherInfoResponse {
+    override fun updateHistoryTeacher(teacher: Teacher, dateOfChanging: ZonedDateTime, historyId: UUID): GetTeacherInfoResponse {
         LOGGER.debug("SERVICE update history teacher {}, {}", teacher, dateOfChanging)
         try {
             repository.updateHistoryTeacher(teacher, dateOfChanging)
@@ -105,7 +109,7 @@ open class TeacherService(private val repository: ITeacherRepository, private va
     }
 
     @Transactional
-    override fun deleteHistoryTeacher(id: UUID, dateOfChanging: LocalDateTime): Int {
+    override fun deleteHistoryTeacher(id: UUID, dateOfChanging: ZonedDateTime): Int {
         LOGGER.debug("SERVICE delete history teacher {}, {}", id, dateOfChanging)
         try {
             return repository.deleteHistoryTeacher(id, dateOfChanging)
@@ -137,6 +141,17 @@ open class TeacherService(private val repository: ITeacherRepository, private va
         } catch (e: RepositoryException) {
             LOGGER.debug("SERVICE error getting actual teacher by user id {}", userId)
             throw ServiceException("SERVICE get actual teacher by user id exception", e)
+        }
+    }
+
+    override fun getTeachersByFilter(filter: TeacherFilter): List<GetTeacherInfoResponse> {
+        LOGGER.debug("SERVICE get teachers by filter {}", filter)
+        try {
+            val teachers = repository.getWithParams(filter)
+            return TeacherConverter.convertToResponseList(teachers)
+        } catch (e: RepositoryException) {
+            LOGGER.debug("SERVICE error getting teachers by filter {}", filter)
+            throw ServiceException("SERVICE get teachers by filter exception", e)
         }
     }
 

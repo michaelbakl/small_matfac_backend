@@ -9,20 +9,23 @@ import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import ru.baklykov.app.core.model.question.QuestionTheme
+import app.core.model.question.QuestionTheme
 import ru.baklykov.app.core.repository.question.IQuestionRepository
 import ru.baklykov.app.core.repository.question.IQuestionThemeRepository
-import ru.baklykov.app.web.model.response.theme.ThemeResponse
+import app.web.model.response.theme.ThemeResponse
 import java.util.*
 
 @Service
-class ThemeService(private val themeRepository: IQuestionThemeRepository, private val questionRepository: IQuestionRepository): IThemeService {
+open class ThemeService(
+    private val themeRepository: IQuestionThemeRepository,
+    private val questionRepository: IQuestionRepository
+) : IThemeService {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(this::class.java)
 
     @Transactional
     @CacheEvict(value = ["themeHierarchy"], allEntries = true)
-    override suspend fun createTheme(name: String, parentThemeId: UUID?): QuestionTheme {
+    override fun createTheme(name: String, parentThemeId: UUID?): QuestionTheme {
         try {
             LOGGER.debug("SERVICE create theme {} {}", name, parentThemeId)
             val parentTheme = parentThemeId?.let { themeRepository.findById(it) }
@@ -47,11 +50,12 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
 
     @Transactional
     @CacheEvict(value = ["theme", "themeHierarchy"], key = "#themeId")
-    override suspend fun updateTheme(themeId: UUID, newName: String): QuestionTheme {
+    override fun updateTheme(themeId: UUID, newName: String): QuestionTheme {
         try {
             LOGGER.debug("SERVICE update theme {} {}", themeId, newName)
 
-            val existingTheme = themeRepository.findById(themeId) ?: throw NotFoundException("Theme was not found by id $themeId")
+            val existingTheme =
+                themeRepository.findById(themeId) ?: throw NotFoundException("Theme was not found by id $themeId")
 
             val updatedTheme = existingTheme.copy(name = newName)
             themeRepository.saveTheme(updatedTheme)
@@ -64,19 +68,19 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
     }
 
     @Cacheable("theme", key = "#themeId")
-    override suspend fun getTheme(themeId: UUID): QuestionTheme {
+    override fun getTheme(themeId: UUID): QuestionTheme {
         try {
             LOGGER.debug("SERVICE get theme {}", themeId)
             return themeRepository.findById(themeId) ?: throw NotFoundException("Theme was not found by id $themeId")
         } catch (e: RepositoryException) {
             LOGGER.error("SERVICE error getting theme {}", themeId, e)
-            throw ServiceException("SERVICE get theme exception", e)
+            throw NotFoundException("Theme was not found by id $themeId", e)
         }
     }
 
     @Transactional
     @CacheEvict(value = ["theme", "themeHierarchy"], allEntries = true)
-    override suspend fun deleteTheme(themeId: UUID): Boolean {
+    override fun deleteTheme(themeId: UUID): Boolean {
         try {
             LOGGER.debug("SERVICE delete theme {}", themeId)
             return themeRepository.deleteTheme(themeId)
@@ -87,18 +91,18 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
     }
 
     @Cacheable("themeHierarchy", key = "#rootThemeId ?: 'root'")
-    override suspend fun getThemeHierarchy(rootThemeId: UUID?): List<QuestionTheme> {
+    override fun getThemeHierarchy(rootThemeId: UUID?): List<QuestionTheme> {
         try {
             LOGGER.debug("SERVICE get theme hierarchy by root id {}", rootThemeId)
-            val rootThemes = if (rootThemeId != null ) themeRepository.findChildThemes(rootThemeId) else listOf()
-            return  rootThemes
+            val rootThemes = if (rootThemeId != null) themeRepository.findChildThemes(rootThemeId) else listOf()
+            return rootThemes
         } catch (e: RepositoryException) {
             LOGGER.error("SERVICE error getting theme hierarchy by root id {}", rootThemeId, e)
             throw ServiceException("SERVICE get theme hierarchy by root id exception", e)
         }
     }
 
-    override suspend fun getParentThemes(themeId: UUID): List<QuestionTheme> {
+    override fun getParentThemes(themeId: UUID): List<QuestionTheme> {
         try {
             LOGGER.debug("SERVICE get parent themes by theme id {}", themeId)
             return themeRepository.getParentThemes(themeId)
@@ -108,7 +112,7 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
         }
     }
 
-    override suspend fun getChildThemes(themeId: UUID): List<QuestionTheme> {
+    override fun getChildThemes(themeId: UUID): List<QuestionTheme> {
         try {
             LOGGER.debug("SERVICE get child themes by theme id {}", themeId)
             return themeRepository.findChildThemes(themeId)
@@ -119,7 +123,7 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
     }
 
     @Transactional
-    override suspend fun addThemeToQuestion(questionId: UUID, themeId: UUID) {
+    override fun addThemeToQuestion(questionId: UUID, themeId: UUID) {
         try {
             LOGGER.debug("SERVICE add theme to question by id {}, {}", questionId, themeId)
             questionRepository.existsById(questionId) || throw NotFoundException("Question was not found by $questionId")
@@ -133,7 +137,7 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
     }
 
     @Transactional
-    override suspend fun removeThemeFromQuestion(questionId: UUID, themeId: UUID) {
+    override fun removeThemeFromQuestion(questionId: UUID, themeId: UUID) {
         try {
             LOGGER.debug("SERVICE remove theme from question by id {}, {}", questionId, themeId)
             themeRepository.removeThemeFromQuestion(questionId, themeId)
@@ -143,7 +147,7 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
         }
     }
 
-    override suspend fun getQuestionThemes(questionId: UUID): List<QuestionTheme> {
+    override fun getQuestionThemes(questionId: UUID): List<QuestionTheme> {
         try {
             LOGGER.debug("SERVICE get question themes by id {}", questionId)
             return themeRepository.findByQuestionId(questionId)
@@ -153,8 +157,8 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
         }
     }
 
-    @Transactional
-    override suspend fun setQuestionThemes(questionId: UUID, themeIds: List<UUID>) {
+    @Transactional(rollbackFor = [RepositoryException::class])
+    override fun setQuestionThemes(questionId: UUID, themeIds: List<UUID>) {
         try {
             LOGGER.debug("SERVICE set question themes by id {} {}", questionId, themeIds)
 
@@ -178,7 +182,7 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
         }
     }
 
-    override suspend fun searchThemes(query: String, limit: Int): List<QuestionTheme> {
+    override fun searchThemes(query: String, limit: Int): List<QuestionTheme> {
         try {
             LOGGER.debug("SERVICE search themes by query {} {}", query, limit)
             return themeRepository.searchThemes(query, limit)
@@ -188,7 +192,7 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
         }
     }
 
-    override suspend fun validateThemePath(themeId: UUID, newParentId: UUID?): Boolean {
+    override fun validateThemePath(themeId: UUID, newParentId: UUID?): Boolean {
         try {
             LOGGER.debug("SERVICE validate theme path {} {}", themeId, newParentId)
 
@@ -209,24 +213,28 @@ class ThemeService(private val themeRepository: IQuestionThemeRepository, privat
         }
     }
 
-    override suspend fun convertToResponse(theme: QuestionTheme): ThemeResponse {
-        return ThemeResponse(
-            id = theme.id,
-            name = theme.name,
-            path = theme.path,
-            level = theme.level,
-            parentId = if (theme.level > 1) {
-                themeRepository.findIdByPath(theme.path.substringBeforeLast('.'))
-            } else null,
-            hasChildren = themeRepository.findChildThemes(theme.id).isEmpty()
-        )
+    override fun convertToResponse(theme: QuestionTheme): ThemeResponse {
+        return try {
+            ThemeResponse(
+                id = theme.id,
+                name = theme.name,
+                path = theme.path,
+                level = theme.level,
+                parentId = if (theme.level > 1) {
+                    themeRepository.findIdByPath(theme.path.substringBeforeLast('.'))
+                } else null,
+                hasChildren = themeRepository.findChildThemes(theme.id).isEmpty()
+            )
+        } catch (e: RepositoryException) {
+            throw ServiceException("Could not convert to response or find child nodes", e)
+        }
     }
 
-    private fun generatePathPart(name: String): String {
-        return name.lowercase()
-            .replace("[^a-z0-9а-яё]".toRegex(), "_")
-            .replace("_+".toRegex(), "_")
-            .trim('_')
-    }
+        private fun generatePathPart(name: String): String {
+            return name.lowercase()
+                .replace("[^a-z0-9а-яё]".toRegex(), "_")
+                .replace("_+".toRegex(), "_")
+                .trim('_')
+        }
 
-}
+    }

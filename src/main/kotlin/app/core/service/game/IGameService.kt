@@ -1,8 +1,11 @@
-package ru.baklykov.app.core.service.game
+package app.core.service.game
 
-import ru.baklykov.app.core.model.game.GameConfig
-import ru.baklykov.app.web.model.response.game.GetGameInfoResponse
+import app.core.model.game.AnswerResult
+import app.web.model.request.game.AnswerSubmissionRequest
+import app.core.model.game.GameConfig
+import app.web.model.response.game.GetGameInfoResponse
 import java.time.ZonedDateTime
+import java.util.UUID
 
 interface IGameService {
 
@@ -16,13 +19,14 @@ interface IGameService {
 
     /**
      * creates game by game configuration
+     * @param creatorId - uuid of the user that creates the question
      * @param roomId - uuid of the room
      * @param name - name of the game
      * @param gameConfig - game configuration
      * @param categories - categories for questions
      * @return game info response
      */
-    fun createGame(roomId: String, name: String, gameConfig: GameConfig, categories: String): GetGameInfoResponse
+    fun createGame(creatorId: String, roomId: String, name: String, gameConfig: GameConfig, categories: String): GetGameInfoResponse
 
     /**
      * deletes game from the server. Game is removed from every room it is played
@@ -64,4 +68,14 @@ interface IGameService {
      */
     fun changeGameDates(roomId: String, gameId: String, startDate: ZonedDateTime?, finishDate: ZonedDateTime?): GetGameInfoResponse
 
+    /**
+     * Начать игру студентом (создает GameSession, если условий достаточно)
+     * @return true, если сессия успешно создана, false если игра недоступна или уже начата
+     */
+    fun startGameForStudent(gameId: UUID, studentId: UUID): Boolean
+
+    /**
+     * Студент отвечает на вопрос
+     */
+    fun submitAnswer(gameId: UUID, studentId: UUID, answer: AnswerSubmissionRequest): AnswerResult
 }

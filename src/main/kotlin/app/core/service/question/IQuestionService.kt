@@ -1,10 +1,10 @@
 package ru.baklykov.app.core.service.question
 
 import org.springframework.data.domain.Page
-import ru.baklykov.app.web.model.request.question.CreateQuestionRequest
-import ru.baklykov.app.web.model.request.question.UpdateQuestionRequest
-import ru.baklykov.app.web.model.response.question.GetQuestionInfoResponse
-import ru.baklykov.app.web.model.response.theme.ThemeResponse
+import org.springframework.data.domain.Pageable
+import app.web.model.request.question.CreateQuestionRequest
+import app.web.model.request.question.UpdateQuestionRequest
+import app.web.model.response.question.GetQuestionInfoResponse
 import java.util.*
 
 
@@ -21,7 +21,7 @@ interface IQuestionService {
      * @return the created question with generated ID
      * @throws IllegalArgumentException if request validation fails
      */
-    suspend fun createQuestion(ownerId: String, request: CreateQuestionRequest): GetQuestionInfoResponse?
+    fun createQuestion(ownerId: String, request: CreateQuestionRequest): GetQuestionInfoResponse
 
     /**
      * Retrieves a question by its unique identifier.
@@ -52,54 +52,13 @@ interface IQuestionService {
     fun deleteQuestion(questionId: UUID)
 
     /**
-     * Associates a theme with a question.
-     *
-     * @param questionId the UUID of the question
-     * @param themeId the UUID of the theme to associate
-     * @throws QuestionNotFoundException if no question exists with the given ID
-     * @throws ThemeNotFoundException if no theme exists with the given ID
-     * @throws IllegalStateException if association already exists
-     */
-    fun addThemeToQuestion(questionId: UUID, themeId: UUID)
-
-    /**
-     * Removes a theme association from a question.
-     *
-     * @param questionId the UUID of the question
-     * @param themeId the UUID of the theme to remove
-     * @throws QuestionNotFoundException if no question exists with the given ID
-     * @throws ThemeNotFoundException if no theme exists with the given ID
-     */
-    fun removeThemeFromQuestion(questionId: UUID, themeId: UUID)
-
-    /**
-     * Replaces all theme associations for a question.
-     *
-     * @param questionId the UUID of the question
-     * @param themeIds the list of theme UUIDs to associate
-     * @throws QuestionNotFoundException if no question exists with the given ID
-     * @throws ThemeNotFoundException if any theme doesn't exist
-     */
-    fun setQuestionThemes(questionId: UUID, themeIds: List<UUID>)
-
-    /**
-     * Retrieves all themes associated with a question.
-     *
-     * @param questionId the UUID of the question
-     * @return list of associated themes (empty if none)
-     * @throws QuestionNotFoundException if no question exists with the given ID
-     */
-    fun getQuestionThemes(questionId: UUID): List<ThemeResponse?>?
-
-    /**
      * Searches questions by title with pagination support.
      *
      * @param query the search string (case-insensitive)
-     * @param page the page number (0-based)
-     * @param size the number of items per page
+     * @param pageable the page number (0-based)
      * @return a page of matching questions
      */
-    fun searchQuestions(query: String, page: Int, size: Int): Page<GetQuestionInfoResponse?>?
+    fun searchQuestions(query: String, pageable: Pageable): Page<GetQuestionInfoResponse?>?
 
     /**
      * Finds questions created by a specific teacher.

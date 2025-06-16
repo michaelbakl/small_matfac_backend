@@ -3,7 +3,7 @@ package app.core.service.subject
 import app.web.model.request.subject.GetSubjectsWithParamsRequest
 import app.web.model.response.subject.GetSubjectsResponse
 import app.web.model.response.subject.GetSubjectResponse
-import ru.baklykov.app.core.model.Subject
+import app.core.model.Subject
 
 interface ISubjectService {
     fun addSubject(request: Subject): GetSubjectResponse

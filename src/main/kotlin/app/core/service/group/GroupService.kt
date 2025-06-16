@@ -1,6 +1,6 @@
 package app.core.service.group
 
-import app.core.converter.GroupConverter
+import ru.baklykov.app.core.converter.group.GroupConverter
 import app.core.exception.NotFoundException
 import app.core.exception.RepositoryException
 import app.core.exception.ServiceException
@@ -11,12 +11,12 @@ import app.web.model.response.group.GetGroupsInfoResponse
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import ru.baklykov.app.core.model.GroupInfo
+import app.core.model.GroupInfo
 import java.sql.Timestamp
 import java.util.*
 
 @Service
-class GroupService(private val repository: IGroupRepository) : IGroupService {
+open class GroupService(private val repository: IGroupRepository) : IGroupService {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(this::class.java)
 

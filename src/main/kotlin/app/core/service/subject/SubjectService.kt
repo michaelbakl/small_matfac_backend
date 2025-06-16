@@ -10,11 +10,12 @@ import app.core.repository.subject.ISubjectRepository
 import app.web.model.request.subject.GetSubjectsWithParamsRequest
 import app.web.model.response.subject.GetSubjectsResponse
 import app.web.model.response.subject.GetSubjectResponse
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import ru.baklykov.app.core.model.Subject
-import java.time.LocalDateTime
+import app.core.model.Subject
 import java.util.UUID
 
+@Service
 open class SubjectService(private val repository: ISubjectRepository) : ISubjectService {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(SubjectService::class.java)

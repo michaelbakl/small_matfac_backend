@@ -1,13 +1,8 @@
 package ru.baklykov.app.core.service.room
 
 import ru.baklykov.app.core.filter.RoomFilter
-import ru.baklykov.app.core.model.Room
-import ru.baklykov.app.core.model.game.GameConfig
-import ru.baklykov.app.web.model.response.room.GetRoomInfoResponse
-import java.time.LocalDateTime
-import java.time.ZonedDateTime
-import java.util.*
-import javax.swing.text.StyledEditorKit.BoldAction
+import app.core.model.Room
+import app.web.model.response.room.GetRoomInfoResponse
 
 interface IRoomService {
 
@@ -37,8 +32,6 @@ interface IRoomService {
 
     fun startGame(roomId: String, gameId: String): GetRoomInfoResponse
 
-    fun addGameToRoom(roomId: String, gameId: String): GetRoomInfoResponse
-
     fun removeGameFromRoom(roomId: String, gameId: String): GetRoomInfoResponse
 
     /**
@@ -48,5 +41,7 @@ interface IRoomService {
      * @return true if game exists in room, false otherwise
      */
     fun checkGameExists(roomId: String, gameId: String): Boolean
+
+    fun isUserInRoom(roomId: String, userId: String): Boolean
 
 }
