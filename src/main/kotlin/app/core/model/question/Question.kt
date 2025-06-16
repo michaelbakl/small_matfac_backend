@@ -1,6 +1,6 @@
-package ru.baklykov.app.core.model.question
+package app.core.model.question
 
-import ru.baklykov.app.web.model.dto.answer.AnswerDto
+import app.web.model.dto.answer.AnswerDto
 import java.util.*
 
 /**

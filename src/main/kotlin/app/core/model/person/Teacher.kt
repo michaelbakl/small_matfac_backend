@@ -1,6 +1,6 @@
-package ru.baklykov.app.core.model.person
+package app.core.model.person
 
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
 data class Teacher(
@@ -10,6 +10,6 @@ data class Teacher(
     val name: String,
     val middleName: String?,
     val email: String,
-    val dateOfBirth: LocalDateTime? = null,
-    val dateOfEntering: LocalDateTime? = null
+    val dateOfBirth: ZonedDateTime? = null,
+    val dateOfEntering: ZonedDateTime? = null
 )

@@ -1,8 +1,6 @@
-package ru.baklykov.app.core.model.game
+package app.core.model.game
 
-import ru.baklykov.app.core.model.question.Question
-import ru.baklykov.app.core.model.StudentAnswer
-import ru.baklykov.app.core.model.StudentResult
+import app.core.model.question.Question
 import java.util.*
 
 data class Game(
@@ -11,7 +9,5 @@ data class Game(
     val creatorId: UUID,
     val questions: List<Question>,
     val config: GameConfig,
-    val status: String,
-    val studentsAnswers: List<StudentAnswer>? = listOf(),
-    val studentsResults: List<StudentResult>? = listOf(),
+    val status: String
 )

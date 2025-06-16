@@ -1,5 +1,6 @@
-package ru.baklykov.app.core.model
+package app.core.model
 
+import java.time.ZonedDateTime
 import java.util.*
 
 data class Room (
@@ -9,5 +10,5 @@ data class Room (
     val students: List<UUID>,
     val isClosed: Boolean,
     val games: List<UUID> ?= listOf(),
-    val dateOfCreating: String
+    val dateOfCreating: ZonedDateTime ?= null
 )

@@ -1,6 +1,6 @@
-package ru.baklykov.app.core.model.person
+package app.core.model.person
 
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
 data class Student(
@@ -10,7 +10,7 @@ data class Student(
     val name: String,
     val middleName: String?,
     val email: String,
-    val dateOfBirth: LocalDateTime? = null,
-    var dateOfEntering: LocalDateTime? = null,
+    val dateOfBirth: ZonedDateTime? = null,
+    var dateOfEntering: ZonedDateTime? = null,
     val groups: List<StudentGroupInfo> = listOf(),
 )

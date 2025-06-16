@@ -1,7 +1,7 @@
-package ru.baklykov.app.core.model.person
+package app.core.model.person
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.UUID
 
 data class StudentGroupInfo (
@@ -18,15 +18,15 @@ data class StudentGroupInfo (
     val groupName: String,
 
     @JsonProperty
-    val startDate: LocalDateTime,
+    val startDate: ZonedDateTime,
 
     @JsonProperty
-    val endDate: LocalDateTime?,
+    val endDate: ZonedDateTime?,
 
     @JsonProperty
     val actual: Boolean?,
 
     @JsonProperty
-    val dateOfChanging: LocalDateTime?
+    val dateOfChanging: ZonedDateTime?
 
 )

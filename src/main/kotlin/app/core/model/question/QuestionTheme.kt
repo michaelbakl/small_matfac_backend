@@ -1,4 +1,4 @@
-package ru.baklykov.app.core.model.question
+package app.core.model.question
 
 import java.util.*
 

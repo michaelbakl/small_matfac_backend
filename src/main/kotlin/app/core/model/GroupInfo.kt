@@ -1,4 +1,4 @@
-package ru.baklykov.app.core.model
+package app.core.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.ZonedDateTime
