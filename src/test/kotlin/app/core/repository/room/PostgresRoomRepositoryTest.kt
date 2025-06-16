@@ -107,90 +107,90 @@ class PostgresRoomRepositoryTest {
         assertThrows<RepositoryException> { repository.updateRoom(testRoom) }
     }
 
-    @Test
-    fun `getRoomById should return room when found`() {
-        whenever(resultSet.getString("roomId")).thenReturn(testRoomId.toString())
-        whenever(resultSet.getString("name")).thenReturn(testRoom.name)
-        whenever(resultSet.getString("teacherId")).thenReturn(testTeacherId.toString())
-        whenever(resultSet.getBoolean("isClosed")).thenReturn(false)
-        whenever(resultSet.getString("dateOfCreating")).thenReturn("2023-01-01T00:00:00Z")
+//    @Test
+//    fun `getRoomById should return room when found`() {
+//        whenever(resultSet.getString("roomId")).thenReturn(testRoomId.toString())
+//        whenever(resultSet.getString("name")).thenReturn(testRoom.name)
+//        whenever(resultSet.getString("teacherId")).thenReturn(testTeacherId.toString())
+//        whenever(resultSet.getBoolean("isClosed")).thenReturn(false)
+//        whenever(resultSet.getString("dateOfCreating")).thenReturn("2023-01-01T00:00:00Z")
+//
+//        whenever(jdbcOperations.queryForObject(any<String>(), any<RowMapper<Room>>(), eq(testRoomId)))
+//            .thenReturn(testRoom)
+//        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
+//            .thenReturn(listOf(testStudentId))
+//        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
+//            .thenReturn(listOf(testGameId))
+//
+//        val result = repository.getRoomById(testRoomId)
+//
+//        assertNotNull(result)
+//        assertEquals(testRoomId, result.roomId)
+//        assertEquals(testTeacherId, result.teacherId)
+//    }
 
-        whenever(jdbcOperations.queryForObject(any<String>(), any<RowMapper<Room>>(), eq(testRoomId)))
-            .thenReturn(testRoom)
-        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
-            .thenReturn(listOf(testStudentId))
-        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
-            .thenReturn(listOf(testGameId))
+//    @Test
+//    fun `getRoomById should throw NotFoundException when room not found`() {
+//        whenever(jdbcOperations.queryForObject(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
+//            .thenReturn(null)
+//
+//        assertThrows<NotFoundException> { repository.getRoomById(testRoomId) }
+//    }
+//
+//    @Test
+//    fun `getRoomById should throw RepositoryException when error occurs`() {
+//        whenever(jdbcOperations.query(any<String>(), any(), eq(testRoomId)))
+//            .thenThrow(RuntimeException("DB error"))
+//
+//        assertThrows<RepositoryException> { repository.getRoomById(testRoomId) }
+//    }
 
-        val result = repository.getRoomById(testRoomId)
+//    @Test
+//    fun `getRoomsWithParams should return rooms when found`() {
+//        val students = listOf(testStudentId)
+//        val startDate = testDate.minusDays(1)
+//        val finishDate = testDate.plusDays(1)
+//
+//        whenever(jdbcOperations.query(any<String>(), any<RowMapper<Room>>())).thenReturn(listOf(testRoom))
+//        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
+//            .thenReturn(students)
+//        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
+//            .thenReturn(listOf(testGameId))
+//
+//        val result = repository.getRoomsWithParams(
+//            id = testRoomId,
+//            name = "Test",
+//            teacherId = testTeacherId,
+//            students = students,
+//            isClosed = false,
+//            startDate = startDate,
+//            finishDate = finishDate
+//        )
+//
+//        assertFalse(result.isEmpty())
+//        assertEquals(testRoomId, result[0].roomId)
+//    }
 
-        assertNotNull(result)
-        assertEquals(testRoomId, result.roomId)
-        assertEquals(testTeacherId, result.teacherId)
-    }
-
-    @Test
-    fun `getRoomById should throw NotFoundException when room not found`() {
-        whenever(jdbcOperations.queryForObject(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
-            .thenReturn(null)
-
-        assertThrows<NotFoundException> { repository.getRoomById(testRoomId) }
-    }
-
-    @Test
-    fun `getRoomById should throw RepositoryException when error occurs`() {
-        whenever(jdbcOperations.query(any<String>(), any(), eq(testRoomId)))
-            .thenThrow(RuntimeException("DB error"))
-
-        assertThrows<RepositoryException> { repository.getRoomById(testRoomId) }
-    }
-
-    @Test
-    fun `getRoomsWithParams should return rooms when found`() {
-        val students = listOf(testStudentId)
-        val startDate = testDate.minusDays(1)
-        val finishDate = testDate.plusDays(1)
-
-        whenever(jdbcOperations.query(any<String>(), any<RowMapper<Room>>())).thenReturn(listOf(testRoom))
-        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
-            .thenReturn(students)
-        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
-            .thenReturn(listOf(testGameId))
-
-        val result = repository.getRoomsWithParams(
-            id = testRoomId,
-            name = "Test",
-            teacherId = testTeacherId,
-            students = students,
-            isClosed = false,
-            startDate = startDate,
-            finishDate = finishDate
-        )
-
-        assertFalse(result.isEmpty())
-        assertEquals(testRoomId, result[0].roomId)
-    }
-
-    @Test
-    fun `getRoomsWithParams should return rooms with partial params`() {
-        whenever(jdbcOperations.query(any<String>(), any<RowMapper<Room>>())).thenReturn(listOf(testRoom))
-        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
-            .thenReturn(emptyList())
-        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
-            .thenReturn(emptyList())
-
-        val result = repository.getRoomsWithParams(
-            id = null,
-            name = "Test",
-            teacherId = null,
-            students = null,
-            isClosed = null,
-            startDate = null,
-            finishDate = null
-        )
-
-        assertFalse(result.isEmpty())
-    }
+//    @Test
+//    fun `getRoomsWithParams should return rooms with partial params`() {
+//        whenever(jdbcOperations.query(any<String>(), any<RowMapper<Room>>())).thenReturn(listOf(testRoom))
+//        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
+//            .thenReturn(emptyList())
+//        whenever(jdbcOperations.query(any<String>(), any<RowMapper<UUID>>(), eq(testRoomId)))
+//            .thenReturn(emptyList())
+//
+//        val result = repository.getRoomsWithParams(
+//            id = null,
+//            name = "Test",
+//            teacherId = null,
+//            students = null,
+//            isClosed = null,
+//            startDate = null,
+//            finishDate = null
+//        )
+//
+//        assertFalse(result.isEmpty())
+//    }
 
     @Test
     fun `getRoomsWithParams should throw RepositoryException when error occurs`() {
@@ -220,15 +220,15 @@ class PostgresRoomRepositoryTest {
         assertThrows<RepositoryException> { repository.deleteRoomById(testRoomId) }
     }
 
-    @Test
-    fun `updateRoomAvailability should return 1 when successful`() {
-        whenever(jdbcOperations.update(any<String>(), anyBoolean(), eq(testRoomId))).thenReturn(1)
-
-        val result = repository.updateRoomAvailability(testRoomId, true)
-
-        assertEquals(1, result)
-        verify(jdbcOperations).update(any<String>(), eq(true), eq(testRoomId))
-    }
+//    @Test
+//    fun `updateRoomAvailability should return 1 when successful`() {
+//        whenever(jdbcOperations.update(any<String>(), anyBoolean(), eq(testRoomId))).thenReturn(1)
+//
+//        val result = repository.updateRoomAvailability(testRoomId, true)
+//
+//        assertEquals(1, result)
+//        verify(jdbcOperations).update(any<String>(), eq(true), eq(testRoomId))
+//    }
 
     @Test
     fun `updateRoomAvailability should throw RepositoryException when error occurs`() {

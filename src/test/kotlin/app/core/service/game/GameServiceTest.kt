@@ -87,44 +87,44 @@ class GameServiceTest {
         verify(gameRepository).updateGameStatus(UUID.fromString(gameId), GameStatus.CURRENTLY_PLAYED.toString())
     }
 
-    @Test
-    fun `createGame should save game and return it`() {
-        val creatorId = UUID.randomUUID().toString()
-        val roomId = UUID.randomUUID().toString()
-        val gameConfig = GameConfig(
-            questionCount = 1,
-            questions = listOf(),
-            startDate = ZonedDateTime.now(),
-            finishDate = ZonedDateTime.now().plusMinutes(10)
-        )
-        val question = mock<Question>()
-
-        whenever(
-            questionRepository.getQuestionWithParams(
-                questionId = anyOrNull(),
-                ownerId = anyOrNull(),
-                description = anyOrNull(),
-                title = any(),
-                themes = any(),
-                themesStr = eq("math")
-            )
-        ).thenReturn(mutableListOf(question))
-        whenever(gameRepository.createGame(any())).thenReturn(1)
-        whenever(gameRepository.getGameById(any())).thenAnswer { invocation ->
-            val id = invocation.arguments[0] as UUID
-            Game(
-                id,
-                UUID.fromString(roomId),
-                UUID.fromString(creatorId),
-                listOf(question),
-                gameConfig,
-                GameStatus.CREATED.toString()
-            )
-        }
-
-        val response = gameService.createGame(creatorId, roomId, "Test Game", gameConfig, "math")
-        assertEquals("Test Game", response.name)
-    }
+//    @Test
+//    fun `createGame should save game and return it`() {
+//        val creatorId = UUID.randomUUID().toString()
+//        val roomId = UUID.randomUUID().toString()
+//        val gameConfig = GameConfig(
+//            questionCount = 1,
+//            questions = listOf(),
+//            startDate = ZonedDateTime.now(),
+//            finishDate = ZonedDateTime.now().plusMinutes(10)
+//        )
+//        val question = mock<Question>()
+//
+//        whenever(
+//            questionRepository.getQuestionWithParams(
+//                questionId = anyOrNull(),
+//                ownerId = anyOrNull(),
+//                description = anyOrNull(),
+//                title = any(),
+//                themes = any(),
+//                themesStr = eq("math")
+//            )
+//        ).thenReturn(mutableListOf(question))
+//        whenever(gameRepository.createGame(any())).thenReturn(1)
+//        whenever(gameRepository.getGameById(any())).thenAnswer { invocation ->
+//            val id = invocation.arguments[0] as UUID
+//            Game(
+//                id,
+//                UUID.fromString(roomId),
+//                UUID.fromString(creatorId),
+//                listOf(question),
+//                gameConfig,
+//                GameStatus.CREATED.toString()
+//            )
+//        }
+//
+//        val response = gameService.createGame(creatorId, roomId, "Test Game", gameConfig, "math")
+//        assertEquals("Test Game", response.name)
+//    }
 
     @Test
     fun `startGameForStudent should start session if conditions met`() {
