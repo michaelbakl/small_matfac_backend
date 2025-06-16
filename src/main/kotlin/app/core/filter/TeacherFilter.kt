@@ -1,6 +1,6 @@
 package app.core.filter
 
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
 data class TeacherFilter (
@@ -11,6 +11,6 @@ data class TeacherFilter (
     val name: String?,
     val middleName: String?,
     val email: String?,
-    val dateOfBirth: LocalDateTime?,
-
+    val dateOfBirthL: ZonedDateTime?,
+    val dateOfBirthR: ZonedDateTime?
 )
