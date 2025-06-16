@@ -4,39 +4,82 @@ import app.core.exception.NotFoundException
 import app.core.util.CommonResponse
 import app.core.validation.IdValidator
 import jakarta.validation.Valid
-import jakarta.websocket.server.PathParam
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.BindingResult
 import org.springframework.web.bind.annotation.*
-import ru.baklykov.app.core.converter.GameConfigConverter
+import app.core.converter.game.GameConfigConverter
 import ru.baklykov.app.core.converter.room.RoomConverter
-import ru.baklykov.app.core.converter.ZonedDateConverter
+import ru.baklykov.app.core.converter.datetime.ZonedDateConverter
 import ru.baklykov.app.core.converter.room.UpdateRoomConverter
 import ru.baklykov.app.core.filter.RoomFilter
-import ru.baklykov.app.core.service.game.IGameService
+import app.core.service.game.IGameService
 import ru.baklykov.app.core.service.room.IRoomService
-import ru.baklykov.app.web.model.request.game.CreateGameRequest
-import ru.baklykov.app.web.model.request.game.UpdateDatesInGameRequest
-import ru.baklykov.app.web.model.request.room.AddParticipantsToRoomRequest
-import ru.baklykov.app.web.model.request.room.AddRoomRequest
-import ru.baklykov.app.web.model.request.room.UpdateParticipantsInRoomRequest
-import ru.baklykov.app.web.model.request.room.UpdateRoomRequest
-import ru.baklykov.app.web.model.response.game.GetGameInfoResponse
-import ru.baklykov.app.web.model.response.room.GetRoomInfoResponse
+import app.web.model.request.game.CreateGameRequest
+import app.web.model.request.game.UpdateDatesInGameRequest
+import app.web.model.request.room.AddParticipantsToRoomRequest
+import app.web.model.request.room.AddRoomRequest
+import app.web.model.request.room.UpdateParticipantsInRoomRequest
+import app.web.model.request.room.UpdateRoomRequest
+import app.web.model.response.game.GetGameInfoResponse
+import app.web.security.AuthRolesRequired
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
+import app.web.model.response.room.GetRoomInfoResponse
 import java.time.format.DateTimeParseException
+import java.util.UUID
 
+@Tag(name = "Room Management", description = "Операции управления комнатами и играми")
 @RestController
-@RequestMapping("/rooms")
+@RequestMapping("api/rooms")
 class RoomController(private val roomService: IRoomService, private val gameService: IGameService) {
 
+    @Operation(summary = "Получить все комнаты", description = "Возвращает список всех доступных комнат")
+    @ApiResponse(responseCode = "200", description = "Успешный ответ")
+    @GetMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ResponseBody
+    fun getAllRooms(): ResponseEntity<CommonResponse<List<GetRoomInfoResponse>>> {
+        try {
+//            if (bindingResult.hasErrors()) {
+//                return ResponseEntity
+//                    .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+//                    .body(CommonResponse(true, bindingResult.toString(), ""))
+//            }
+
+
+            val response: List<GetRoomInfoResponse> =
+                roomService.getRoomsWithParams(RoomFilter())
+
+            val commonResponse: CommonResponse<List<GetRoomInfoResponse>> = CommonResponse(response = response)
+
+            return ResponseEntity
+                .ok()
+                .body(commonResponse)
+        } catch (e: DateTimeParseException) {
+            return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(CommonResponse(true, e.toString(), ""))
+
+        } catch (e: Exception) {
+            return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(CommonResponse(true, e.toString(), ""))
+        }
+    }
+
+
+    @Operation(summary = "Создать комнату", description = "Создаёт новую комнату")
+    @ApiResponse(responseCode = "200", description = "Комната создана")
+    @ApiResponse(responseCode = "415", description = "Ошибки валидации данных")
     @PostMapping(
         path = ["/create"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @ResponseBody
+    @AuthRolesRequired("ADMIN", "MODERATOR", "TEACHER")
     fun createRoom(
         @Valid @RequestBody request: AddRoomRequest,
         bindingResult: BindingResult
@@ -69,12 +112,16 @@ class RoomController(private val roomService: IRoomService, private val gameServ
         }
     }
 
+    @Operation(summary = "Добавить участников в комнату", description = "Добавляет пользователей в указанную комнату")
+    @ApiResponse(responseCode = "200", description = "Участники успешно добавлены")
+    @ApiResponse(responseCode = "404", description = "Комната не найдена")
     @PostMapping(
         path = ["/add_participants"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @ResponseBody
+    @AuthRolesRequired("ADMIN", "MODERATOR", "TEACHER")
     fun addParticipantsToGroup(
         @Valid @RequestBody request: AddParticipantsToRoomRequest,
         bindingResult: BindingResult
@@ -82,7 +129,7 @@ class RoomController(private val roomService: IRoomService, private val gameServ
         try {
             if (bindingResult.hasErrors()) {
                 return ResponseEntity
-                    .ok()
+                    .badRequest()
                     .body(CommonResponse(true, bindingResult.toString(), ""))
             }
 
@@ -121,12 +168,16 @@ class RoomController(private val roomService: IRoomService, private val gameServ
         }
     }
 
+    @Operation(summary = "Обновить участников в комнате", description = "Полностью заменяет список участников комнаты")
+    @ApiResponse(responseCode = "200", description = "Список участников обновлён")
+    @ApiResponse(responseCode = "404", description = "Комната не найдена")
     @PutMapping(
         path = ["/update_participants"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @ResponseBody
+    @AuthRolesRequired("ADMIN", "MODERATOR", "TEACHER")
     fun updateParticipantsInRoom(
         @Valid @RequestBody request: UpdateParticipantsInRoomRequest,
         bindingResult: BindingResult
@@ -172,10 +223,14 @@ class RoomController(private val roomService: IRoomService, private val gameServ
         }
     }
 
+    @Operation(summary = "Получить информацию о комнате", description = "Возвращает данные о комнате по её ID")
+    @ApiResponse(responseCode = "200", description = "Информация о комнате найдена")
+    @ApiResponse(responseCode = "404", description = "Комната не найдена")
     @GetMapping(path = ["/{roomId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
+    @AuthRolesRequired("ADMIN", "MODERATOR", "TEACHER", "STUDENT")
     fun getRoomById(
-        @Valid @PathParam("roomId") roomId: String
+        @Valid @PathVariable("roomId") roomId: String
     ): ResponseEntity<CommonResponse<GetRoomInfoResponse>> {
         try {
             if (!IdValidator.validate(roomId)) {
@@ -198,17 +253,33 @@ class RoomController(private val roomService: IRoomService, private val gameServ
         }
     }
 
+    @Operation(
+        summary = "Получить комнаты по параметрам",
+        description = "Фильтрация комнат по ID, учителю, имени, студентам, дате и статусу"
+    )
+    @ApiResponse(responseCode = "200", description = "Комнаты найдены")
     @GetMapping(path = ["/get_rooms_with_params"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
+    @AuthRolesRequired("ADMIN", "MODERATOR", "TEACHER", "STUDENT")
     fun getRoomsWithParams(
-        @Valid @RequestParam("roomId") roomId: String?,
-        @Valid @RequestParam("teacherId") teacherId: String?,
-        @Valid @RequestParam("name") name: String?,
-        @Valid @RequestParam("openingDate") firstDate: String?,
-        @Valid @RequestParam("closingDate") secondDate: String?,
+        @Valid @RequestParam("roomId", required = false) roomId: String? = null,
+        @Valid @RequestParam("teacherId", required = false) teacherId: String? = null,
+        @Valid @RequestParam("name", required = false) name: String? = null,
+        @Valid @RequestParam("studentIds", required = false) students: List<String>? = listOf(),
+        @Valid @RequestParam("isClosed", required = false) isClosed: Boolean? = null,
+        @Valid @RequestParam("firstDate", required = false) firstDate: String? = null,
+        @Valid @RequestParam("secondDate", required = false) secondDate: String? = null,
     ): ResponseEntity<CommonResponse<List<GetRoomInfoResponse>>> {
         return try {
-            val filter = RoomFilter(roomId, teacherId, name, ZonedDateConverter.convert(firstDate), ZonedDateConverter.convert(secondDate))
+            val filter = RoomFilter(
+                roomId,
+                teacherId,
+                name,
+                students,
+                isClosed,
+                ZonedDateConverter.convert(firstDate),
+                ZonedDateConverter.convert(secondDate)
+            )
             val response: List<GetRoomInfoResponse> = roomService.getRoomsWithParams(filter)
             ResponseEntity
                 .ok()
@@ -225,14 +296,19 @@ class RoomController(private val roomService: IRoomService, private val gameServ
     }
 
 
+    @Operation(summary = "Обновить данные комнаты", description = "Обновляет информацию о комнате")
+    @ApiResponse(responseCode = "200", description = "Комната обновлена")
+    @ApiResponse(responseCode = "400", description = "Неверный ID")
+    @ApiResponse(responseCode = "404", description = "Комната не найдена")
     @PutMapping(
         path = ["/{roomId}"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @ResponseBody
+    @AuthRolesRequired("ADMIN", "MODERATOR", "TEACHER")
     fun updateRoom(
-        @PathParam("roomId") roomId: String,
+        @PathVariable("roomId") roomId: String,
         @Valid @RequestBody request: UpdateRoomRequest,
         bindingResult: BindingResult
     ): ResponseEntity<CommonResponse<GetRoomInfoResponse>> {
@@ -276,8 +352,12 @@ class RoomController(private val roomService: IRoomService, private val gameServ
         }
     }
 
+    @Operation(summary = "Удалить комнату", description = "Удаляет комнату по ID")
+    @ApiResponse(responseCode = "200", description = "Комната удалена")
+    @ApiResponse(responseCode = "404", description = "Комната не найдена")
     @DeleteMapping(path = ["/remove_room"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
+    @AuthRolesRequired("ADMIN", "MODERATOR", "TEACHER")
     fun removeRoom(
         @RequestParam("roomId") roomId: String
     ): ResponseEntity<CommonResponse<Int>> {
@@ -316,8 +396,15 @@ class RoomController(private val roomService: IRoomService, private val gameServ
         }
     }
 
+    @Operation(
+        summary = "Запустить игру в комнате",
+        description = "Запускает или обновляет игру в комнате по времени"
+    )
+    @ApiResponse(responseCode = "200", description = "Игра запущена или обновлена")
+    @ApiResponse(responseCode = "400", description = "Неверный формат ID или игра не найдена в комнате")
     @PostMapping(path = ["/{roomId}/games/{gameId}/start"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
+    @AuthRolesRequired("ADMIN", "MODERATOR", "TEACHER")
     fun startGameByTeacherByTime(
         @RequestParam("roomId") roomId: String,
         @RequestParam("gameId") gameId: String,
@@ -360,10 +447,17 @@ class RoomController(private val roomService: IRoomService, private val gameServ
         }
     }
 
+    @Operation(
+        summary = "Создать игру в комнате",
+        description = "Создаёт новую игру в указанной комнате"
+    )
+    @ApiResponse(responseCode = "200", description = "Игра успешно создана")
+    @ApiResponse(responseCode = "415", description = "Ошибки валидации данных")
     @PostMapping(path = ["/{roomId}/games/create"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
+    @AuthRolesRequired("ADMIN", "MODERATOR", "TEACHER")
     fun createGameInRoom(
-        @PathParam("roomId") roomId: String,
+        @PathVariable("roomId") roomId: String,
         @Valid @RequestBody request: CreateGameRequest,
         bindingResult: BindingResult
     ): ResponseEntity<CommonResponse<GetGameInfoResponse>> {
@@ -379,7 +473,15 @@ class RoomController(private val roomService: IRoomService, private val gameServ
                     .body(CommonResponse(true, "Id is not UUID", ""))
             }
 
-            val response = gameService.createGame(roomId, request.name, GameConfigConverter.convert(request), request.categories)
+            // TODO add creator id from credentials
+
+            val response = gameService.createGame(
+                creatorId = UUID.randomUUID().toString(),
+                roomId,
+                request.name,
+                GameConfigConverter.convert(request),
+                request.categories.toString()
+            )
 
             return ResponseEntity
                 .ok()

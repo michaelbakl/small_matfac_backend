@@ -16,15 +16,27 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.BindingResult
 import org.springframework.web.bind.annotation.*
-import ru.baklykov.app.core.model.Subject
+import app.core.model.Subject
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import java.time.format.DateTimeParseException
 import java.util.*
 
 
+@Tag(name = "Subject API", description = "Operations related to subject management")
 @RestController
 @RequestMapping("/subjects")
 class SubjectController(private val service: ISubjectService) {
 
+    @Operation(
+        summary = "Add a new subject",
+        description = "Creates a new subject in the system",
+        responses = [
+            ApiResponse(responseCode = "200", description = "Subject created successfully"),
+            ApiResponse(responseCode = "400", description = "Validation error or bad input")
+        ]
+    )
     @PostMapping(path = ["/add_subject"], consumes = [MediaType.APPLICATION_JSON_VALUE], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
     fun addSubject(
@@ -58,6 +70,15 @@ class SubjectController(private val service: ISubjectService) {
         }
     }
 
+    @Operation(
+        summary = "Get subject by ID",
+        description = "Retrieve a subject using its UUID",
+        responses = [
+            ApiResponse(responseCode = "200", description = "Subject retrieved"),
+            ApiResponse(responseCode = "400", description = "Invalid UUID format"),
+            ApiResponse(responseCode = "404", description = "Subject not found")
+        ]
+    )
     @GetMapping(path = ["/get_subject/{subjectId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
     fun getSubjectById(@PathVariable("subjectId") id: String):
@@ -83,6 +104,15 @@ class SubjectController(private val service: ISubjectService) {
         }
     }
 
+    @Operation(
+        summary = "Update subject",
+        description = "Update an existing subject's information",
+        responses = [
+            ApiResponse(responseCode = "200", description = "Subject updated"),
+            ApiResponse(responseCode = "400", description = "Validation error"),
+            ApiResponse(responseCode = "404", description = "Subject not found")
+        ]
+    )
     @PostMapping(path = ["/update_subject"], consumes = [MediaType.APPLICATION_JSON_VALUE], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
     fun updateSubject(
@@ -114,6 +144,15 @@ class SubjectController(private val service: ISubjectService) {
         }
     }
 
+    @Operation(
+        summary = "Delete subject",
+        description = "Delete a subject by ID",
+        responses = [
+            ApiResponse(responseCode = "200", description = "Subject deleted"),
+            ApiResponse(responseCode = "400", description = "Validation error"),
+            ApiResponse(responseCode = "404", description = "Subject not found")
+        ]
+    )
     @DeleteMapping(path = ["/remove_subject"], consumes = [MediaType.APPLICATION_JSON_VALUE], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
     fun deleteSubject(
@@ -143,6 +182,15 @@ class SubjectController(private val service: ISubjectService) {
         }
     }
 
+    @Operation(
+        summary = "Get subjects by filter",
+        description = "Retrieve subjects matching given ID and/or name",
+        responses = [
+            ApiResponse(responseCode = "200", description = "Subjects retrieved"),
+            ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            ApiResponse(responseCode = "404", description = "No subjects found")
+        ]
+    )
     @GetMapping(path = ["/get_subjects_with_params"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
     fun getSubjectsByFilter(
@@ -166,6 +214,14 @@ class SubjectController(private val service: ISubjectService) {
         }
     }
 
+    @Operation(
+        summary = "Get all subjects",
+        description = "Returns the list of all subjects",
+        responses = [
+            ApiResponse(responseCode = "200", description = "Subjects retrieved"),
+            ApiResponse(responseCode = "404", description = "No subjects found")
+        ]
+    )
     @GetMapping(path = ["/get_all_subjects"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseBody
     fun getAllSubjects(): ResponseEntity<CommonResponse<GetSubjectsResponse>> {
