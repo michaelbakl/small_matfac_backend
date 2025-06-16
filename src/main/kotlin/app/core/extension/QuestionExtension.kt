@@ -1,9 +1,11 @@
-package ru.baklykov.app.core.extension
+package app.core.extension
 
-import ru.baklykov.app.core.model.question.Question
+import app.core.model.question.Question
 import ru.baklykov.app.core.repository.question.IQuestionThemeRepository
-import ru.baklykov.app.web.model.response.answer.AnswerResponse
-import ru.baklykov.app.web.model.response.question.GetQuestionInfoResponse
+import app.web.model.response.answer.AnswerResponse
+import app.web.model.response.question.GetQuestionInfoResponse
+import app.web.model.response.theme.ThemeResponse
+import java.util.*
 
 
 fun Question.toResponse(themeRepository: IQuestionThemeRepository): GetQuestionInfoResponse {
@@ -12,15 +14,24 @@ fun Question.toResponse(themeRepository: IQuestionThemeRepository): GetQuestionI
         title = title,
         description = description,
         pictures = pictures,
-        answers = answers.map { (answer, correctness) ->
+        answers = answers.map { (id, text, correct, points) ->
             AnswerResponse(
-                id = answer,
-                text = answer.toString(),
-                correct = correctness.first,
-                points = correctness.second
+                id = id ?: UUID.randomUUID(),
+                text = text,
+                correct = correct,
+                points = points
             )
         },
-        themes = themeRepository.findByQuestionId(questionId),
-        createdAt = createdAt
+        themes = themeRepository.findByQuestionId(questionId).map { (id, path, name, level) ->
+            ThemeResponse(
+                id = id,
+                name = name,
+                path = path,
+                level = level,
+                parentId = themeRepository.getParentThemes(id).last().id,
+                hasChildren = themeRepository.findChildThemes(id).isNotEmpty()
+            )
+        },
+        ownerId = ownerId
     )
 }
