@@ -1,4 +1,4 @@
-package ru.baklykov.app.core.repository
+package ru.baklykov.app.core.repository.user
 
 import ru.baklykov.app.core.model.User
 import java.util.*

@@ -1,7 +1,9 @@
-package app.core.converter
+package ru.baklykov.app.core.converter.teacher
 
+import app.core.converter.IConverter
 import app.web.model.request.teacher.UpdateTeacherInfoRequest
-import ru.baklykov.app.core.model.person.Teacher
+import ru.baklykov.app.core.converter.datetime.ZonedDateConverter
+import app.core.model.person.Teacher
 import java.util.*
 
 object TeacherUpdateConverter: IConverter<Teacher, UpdateTeacherInfoRequest> {
@@ -13,7 +15,7 @@ object TeacherUpdateConverter: IConverter<Teacher, UpdateTeacherInfoRequest> {
             obj.name,
             obj.middleName,
             obj.email,
-            if (obj.dateOfBirth != null) LocalDateConverter.convert(obj.dateOfBirth) else null,
+            if (obj.dateOfBirth != null) ZonedDateConverter.convert(obj.dateOfBirth) else null,
             null
         )
     }

@@ -1,5 +1,6 @@
-package app.core.converter
+package ru.baklykov.app.core.converter.datetime
 
+import app.core.converter.IConverter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 

@@ -1,9 +1,10 @@
-package app.core.converter
+package ru.baklykov.app.core.converter.group
 
+import app.core.converter.ITripleConverter
 import app.web.model.request.group.AddGroupRequest
 import app.web.model.response.group.GetGroupInfoResponse
-import ru.baklykov.app.core.converter.ZonedDateConverter
-import ru.baklykov.app.core.model.GroupInfo
+import ru.baklykov.app.core.converter.datetime.ZonedDateConverter
+import app.core.model.GroupInfo
 import java.time.ZonedDateTime
 import java.util.*
 

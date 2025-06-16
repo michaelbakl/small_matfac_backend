@@ -1,9 +1,11 @@
-package ru.baklykov.app.core.converter
+package app.core.converter.question
 
 import app.core.converter.ITripleConverter
-import ru.baklykov.app.core.model.question.Question
-import ru.baklykov.app.web.model.request.question.AddQuestionRequest
-import ru.baklykov.app.web.model.response.question.GetQuestionInfoResponse
+import ru.baklykov.app.core.converter.theme.ThemeConverter
+import app.core.model.question.Question
+import app.web.model.request.question.AddQuestionRequest
+import ru.baklykov.app.core.converter.question.AnswerConverter
+import app.web.model.response.question.GetQuestionInfoResponse
 import java.util.ArrayList
 
 object QuestionConverter: ITripleConverter<Question, AddQuestionRequest, GetQuestionInfoResponse> {
@@ -18,6 +20,14 @@ object QuestionConverter: ITripleConverter<Question, AddQuestionRequest, GetQues
     }
 
     override fun convertToResponse(obj: Question): GetQuestionInfoResponse {
-        return GetQuestionInfoResponse(obj.questionId, obj.ownerId, obj.title, obj.themes, obj.pictures, obj.description, obj.answers)
+        return GetQuestionInfoResponse(
+            obj.questionId,
+            obj.ownerId,
+            obj.title,
+            obj.themes.map { ThemeConverter.convert(it) },
+            obj.pictures,
+            obj.description,
+            obj.answers.map { AnswerConverter.convert(it) }
+        )
     }
 }

@@ -1,8 +1,10 @@
-package app.core.converter
+package ru.baklykov.app.core.converter.teacher
 
+import app.core.converter.ITripleConverter
 import app.web.model.request.teacher.AddTeacherRequest
 import app.web.model.response.person.GetTeacherInfoResponse
-import ru.baklykov.app.core.model.person.Teacher
+import ru.baklykov.app.core.converter.datetime.ZonedDateConverter
+import app.core.model.person.Teacher
 import java.util.ArrayList
 import java.util.UUID
 
@@ -16,7 +18,7 @@ object TeacherConverter: ITripleConverter<Teacher, AddTeacherRequest, GetTeacher
             obj.name,
             obj.middleName,
             obj.email,
-            obj.dateOfBirth ?.let { LocalDateConverter.convert(it) },
+            obj.dateOfBirth ?.let { ZonedDateConverter.convert(it) },
             null,
         )
     }

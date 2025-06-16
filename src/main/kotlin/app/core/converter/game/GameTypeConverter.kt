@@ -1,12 +1,11 @@
-package ru.baklykov.app.core.converter
+package app.core.converter.game
 
 import app.core.converter.IConverter
-import ru.baklykov.app.core.model.game.DifficultyLevel
-import ru.baklykov.app.core.model.game.GameType
+import app.core.model.game.GameType
 
 object GameTypeConverter : IConverter<GameType, String> {
     override fun convert(obj: String): GameType {
-        return when (obj) {
+        return when (obj.lowercase()) {
             "single" -> GameType.SINGLE
             "duel" -> GameType.DUEL
             "team" -> GameType.TEAM

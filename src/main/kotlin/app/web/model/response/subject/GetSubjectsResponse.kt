@@ -1,9 +1,13 @@
 package app.web.model.response.subject
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-data class GetSubjectsResponse (
+@Schema(description = "Ответ с массивом предметов")
+data class GetSubjectsResponse(
+
     @JsonProperty
+    @field:Schema(description = "Массив предметов")
     var response: Array<GetSubjectResponse>
 ) {
     override fun equals(other: Any?): Boolean {

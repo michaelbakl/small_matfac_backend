@@ -1,7 +1,8 @@
-package app.core.converter
+package ru.baklykov.app.core.converter.subject
 
+import app.core.converter.IConverter
 import app.web.model.response.subject.GetSubjectResponse
-import ru.baklykov.app.core.model.Subject
+import app.core.model.Subject
 
 object SubjectConverter: IConverter<GetSubjectResponse, Subject> {
     override fun convert(obj: Subject): GetSubjectResponse {
