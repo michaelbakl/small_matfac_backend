@@ -32,7 +32,7 @@ open class DatabaseConfig {
     @Primary
     open fun dataSource(): DataSource {
         val dataSource = DriverManagerDataSource()
-        dataSource.setDriverClassName(driverClassName!!)
+        dataSource.setDriverClassName(driverClassName ?: "org.postgresql.Driver")
         dataSource.url = databaseUrl
         dataSource.username = username
         dataSource.password = password
