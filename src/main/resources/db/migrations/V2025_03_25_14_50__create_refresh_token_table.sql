@@ -7,5 +7,5 @@ create table if not exists refresh_tokens
     created_at timestamptz DEFAULT NOW(),
     updated_at timestamptz DEFAULT NOW(),
     unique (token),
-    foreign key (userId) references system_user (userId) on delete cascade on update cascade
+    foreign key (userId) references "user" (userId) on delete cascade on update cascade
 );

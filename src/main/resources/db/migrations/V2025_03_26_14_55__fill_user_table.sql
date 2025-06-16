@@ -1,4 +1,4 @@
-INSERT INTO system_user (userId, username, password)
+INSERT INTO "user" (userId, username, password)
 VALUES
     ('76bb8d6e-549b-4e80-a12b-0c4e82bf778a', 'user1', '$2a$12$EkMHdie.q7Tf6IfVNBVJNeM/RD7kXODGwoLkr9lUD7IPXyaxTlHFS'),
     ('f6acb84f-646f-476f-9ce1-e632950273d9', 'user2', '$2a$12$EkMHdie.q7Tf6IfVNBVJNeM/RD7kXODGwoLkr9lUD7IPXyaxTlHFS'),

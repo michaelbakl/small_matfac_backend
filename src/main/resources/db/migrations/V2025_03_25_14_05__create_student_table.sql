@@ -7,5 +7,5 @@ CREATE TABLE IF NOT EXISTS student (
                          email text,
                          dateOfBirth date,
                          dateOfEntering date,
-                         foreign key (userId) references system_user(userId) on delete cascade on update cascade
+                         foreign key (userId) references "user"(userId) on delete cascade on update cascade
 );

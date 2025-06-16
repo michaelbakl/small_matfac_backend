@@ -8,5 +8,5 @@ CREATE TABLE IF NOT EXISTS teacher_versions (
                          dateOfBirth date,
                          dateOfChanging date,
                          primary key (teacherId, dateOfChanging),
-                         foreign key (userId) references system_user(userId) on delete cascade on update cascade
+                         foreign key (userId) references "user"(userId) on delete cascade on update cascade
 );

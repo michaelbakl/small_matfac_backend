@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS student_versions (
                          dateOfEntering date,
                          dateOfChanging timestamptz,
                          primary key (studentId, dateOfChanging),
-                         foreign key (userId) references system_user(userId) on delete cascade on update cascade
+                         foreign key (userId) references "user"(userId) on delete cascade on update cascade
 );

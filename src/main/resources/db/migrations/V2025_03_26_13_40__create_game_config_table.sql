@@ -7,7 +7,7 @@ create table if not exists game_config
     difficulty text,
     allowSkips boolean,
     enableHints boolean,
-    startDate timestampz,
-    finishDate timestampz,
+    startDate timestamptz,
+    finishDate timestamptz,
     foreign key (configId) references game (gameId) on delete cascade on update cascade
 );

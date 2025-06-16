@@ -4,6 +4,6 @@ create table if not exists room
     name text,
     teacherId uuid,
     isClosed boolean not null,
-    dateOfCreating timestampz,
+    dateOfCreating timestamptz,
     foreign key (teacherId) references teacher (teacherId) on delete cascade on update cascade
 );
