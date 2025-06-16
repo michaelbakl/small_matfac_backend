@@ -7,14 +7,16 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
-import ru.baklykov.app.core.model.GroupInfo
+import org.springframework.stereotype.Repository
+import app.core.model.GroupInfo
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.*
 
-class PostgresGroupRepository(private val jdbcOperations: JdbcOperations) : IGroupRepository {
+@Repository
+open class PostgresGroupRepository(private val jdbcOperations: JdbcOperations) : IGroupRepository {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(this::class.java)
 

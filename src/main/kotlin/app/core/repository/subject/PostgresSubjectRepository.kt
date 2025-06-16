@@ -7,12 +7,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
-import ru.baklykov.app.core.model.Subject
+import org.springframework.stereotype.Repository
+import app.core.model.Subject
 import java.sql.ResultSet
 import java.util.*
 import java.util.regex.Pattern
 
 
+@Repository
 open class PostgresSubjectRepository(private val jdbcOperations: JdbcOperations) : ISubjectRepository {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(PostgresSubjectRepository::class.java)

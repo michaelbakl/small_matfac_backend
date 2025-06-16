@@ -1,8 +1,7 @@
 package app.core.repository.subject
 
 import app.core.filter.SubjectFilter
-import ru.baklykov.app.core.model.Subject
-import java.time.LocalDateTime
+import app.core.model.Subject
 import java.util.*
 
 interface ISubjectRepository {

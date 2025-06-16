@@ -1,9 +1,9 @@
 package app.core.repository.student
 
 import app.core.filter.StudentFilter
-import ru.baklykov.app.core.model.person.Student
-import ru.baklykov.app.core.model.person.StudentGroupInfo
-import java.time.LocalDateTime
+import app.core.model.person.Student
+import app.core.model.person.StudentGroupInfo
+import java.time.ZonedDateTime
 import java.util.*
 
 interface IStudentRepository {
@@ -26,7 +26,7 @@ interface IStudentRepository {
      * @param student: object of Student class
      * @return 1 if inserted, 0 otherwise
      */
-    fun addHistoryStudent(student: Student, dateOfChanging:LocalDateTime): Int
+    fun addHistoryStudent(student: Student, dateOfChanging: ZonedDateTime): Int
 
     /**
      * updates a student in database
@@ -40,14 +40,14 @@ interface IStudentRepository {
      * @param student: object of Student class
      * @return 1 if updated, 0 otherwise
      */
-    fun updateHistoryStudent(student: Student, dateOfChanging:LocalDateTime): Int
+    fun updateHistoryStudent(student: Student, dateOfChanging: ZonedDateTime): Int
 
     /**
      * returns an older version of the student from database by id
      * @param id: id of the version of the student
      * @return 1 if updated, 0 otherwise
      */
-    fun getHistoryStudent(id: UUID, dateOfChanging: LocalDateTime): Student?
+    fun getHistoryStudent(id: UUID, dateOfChanging: ZonedDateTime): Student?
 
     /**
      * returns actual version of student
@@ -73,7 +73,7 @@ interface IStudentRepository {
      * deletes a student from database
      * @return 1 if deleted, 0 otherwise
      */
-    fun deleteHistoryStudent(id: UUID, dateOfChanging: LocalDateTime): Int
+    fun deleteHistoryStudent(id: UUID, dateOfChanging: ZonedDateTime): Int
 
     /**
      * adds student to the group
@@ -88,8 +88,8 @@ interface IStudentRepository {
         studentGroupId: UUID,
         studentId: UUID,
         groupId: UUID,
-        startDate: LocalDateTime,
-        endDate: LocalDateTime?,
+        startDate: ZonedDateTime,
+        endDate: ZonedDateTime?,
         actual: Boolean
     ): Int
 
@@ -106,8 +106,8 @@ interface IStudentRepository {
         studentGroupId: UUID,
         studentId: UUID,
         groupId: UUID,
-        startDate: LocalDateTime,
-        endDate: LocalDateTime?,
+        startDate: ZonedDateTime,
+        endDate: ZonedDateTime?,
         actual: Boolean
     ): Int
 
@@ -135,7 +135,7 @@ interface IStudentRepository {
     fun addHistoryStudentGroup(
         historyId: UUID,
         studentGroupId: UUID,
-        dateOfChanging: LocalDateTime
+        dateOfChanging: ZonedDateTime
     ): Int
 
     /**
@@ -148,7 +148,7 @@ interface IStudentRepository {
     fun updateHistoryStudentGroup(
         historyId: UUID,
         studentGroupId: UUID,
-        dateOfChanging: LocalDateTime
+        dateOfChanging: ZonedDateTime
     ): Int
 
     /**

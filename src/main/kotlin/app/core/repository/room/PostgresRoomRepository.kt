@@ -5,13 +5,17 @@ import app.core.util.SqlQueryBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcOperations
-import ru.baklykov.app.core.model.question.Question
-import ru.baklykov.app.core.model.Room
+import org.springframework.stereotype.Repository
+import ru.baklykov.app.core.converter.datetime.TimestampzConverter
+import ru.baklykov.app.core.converter.datetime.ZonedDateConverter
+import ru.baklykov.app.core.converter.util.IdConverter
+import app.core.model.Room
 import java.sql.ResultSet
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
-class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepository {
+@Repository
+open class PostgresRoomRepository(val jdbcOperations: JdbcOperations) : IRoomRepository {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(this::class.java)
 
@@ -23,16 +27,23 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
             getStudentsInRoom(UUID.fromString(resultSet.getString("roomId"))),
             resultSet.getBoolean("isClosed"),
             getGamesInTheRoom(UUID.fromString(resultSet.getString("roomId"))),
-            resultSet.getString("dateOfCreating")
+            ZonedDateConverter.convert(resultSet.getString("dateOfCreating"))
         )
     }
 
     override fun addRoom(room: Room): Int {
         try {
-            LOGGER.error("REPOSITORY create room {}", room)
+            LOGGER.debug("REPOSITORY create room {}", room)
             val sql =
-                "INSERT INTO room (roomId, name, teacherId, isClosed) VALUES(?, ?, ?, ?)"
-            return jdbcOperations.update(sql, room.roomId, room.name, room.teacherId, room.isClosed)
+                "INSERT INTO room (roomId, name, teacherId, isClosed, dateOfCreating) VALUES(?, ?, ?, ?, ?)"
+            return jdbcOperations.update(
+                sql,
+                room.roomId,
+                room.name,
+                room.teacherId,
+                room.isClosed,
+                TimestampzConverter.convertFrom(room.dateOfCreating)
+            )
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY create room {} error", room, e)
             throw RepositoryException("REPOSITORY add room exception", e)
@@ -41,7 +52,7 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
 
     override fun updateRoom(room: Room): Int {
         try {
-            LOGGER.error("REPOSITORY update room {}", room)
+            LOGGER.debug("REPOSITORY update room {}", room)
             val sql =
                 "UPDATE room SET name=?, teacherId=?, isClosed=? WHERE roomId=?"
             return jdbcOperations.update(sql, room.name, room.teacherId, room.isClosed, room.roomId)
@@ -51,9 +62,9 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
         }
     }
 
-    override fun getRoomById(id: UUID): Room? {
+    override fun getRoomById(id: UUID): Room {
         try {
-            LOGGER.error("REPOSITORY get room by id {}", id)
+            LOGGER.debug("REPOSITORY get room by id {}", id)
             val sql = "SELECT * FROM room WHERE roomId=?"
             return jdbcOperations.queryForObject(sql, rowRoomMapper, id)
         } catch (e: Exception) {
@@ -67,31 +78,33 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
         name: String?,
         teacherId: UUID?,
         students: List<UUID>?,
-        questions: List<Question>?,
         isClosed: Boolean?,
-        startDate: LocalDateTime?,
-        finishDate: LocalDateTime?
+        startDate: ZonedDateTime?,
+        finishDate: ZonedDateTime?
     ): List<Room> {
         try {
             val sql = SqlQueryBuilder()
                 .select("*")
                 .from("room")
-                .where("roomId", id?.toString())
+                .join(joinType = "LEFT", "room_users", "room.roomId=room_users.roomId", IdConverter.convertFrom(id))
+                .where("room.roomId", IdConverter.convertFrom(id))
                 .where("name", name)
-                .where("teacherId", teacherId?.toString())
+                .where("teacherId", IdConverter.convertFrom(teacherId))
+                .where("isClosed", isClosed?.toString())
             sql.between(
                 "dateOfCreating",
-                startDate?.toString(),
-                finishDate?.toString()
+                TimestampzConverter.convertFrom(startDate)?.toString(),
+                TimestampzConverter.convertFrom(finishDate)?.toString()
             )
+            students.let { it?.map { item -> sql.where("userId", item.toString()) } }
             val finalSql = sql.build()
+
             LOGGER.debug(
-                "REPOSITORY get rooms with params {}, {}, {}, {}, {}, {}, {}, {} sql: {}",
+                "REPOSITORY get rooms with params {}, {}, {}, {}, {}, {}, {} sql: {}",
                 id,
                 name,
                 teacherId,
                 students,
-                questions,
                 isClosed,
                 startDate,
                 finishDate,
@@ -100,12 +113,11 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
             return jdbcOperations.query(finalSql, rowRoomMapper)
         } catch (e: Exception) {
             LOGGER.error(
-                "REPOSITORY get rooms with params {}, {}, {}, {}, {}, {}, {}, {} error",
+                "REPOSITORY get rooms with params {}, {}, {}, {}, {}, {}, {} error",
                 id,
                 name,
                 teacherId,
                 students,
-                questions,
                 isClosed,
                 startDate,
                 finishDate,
@@ -117,9 +129,9 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
 
     override fun deleteRoomById(id: UUID): Int {
         try {
-            LOGGER.error("REPOSITORY remove room by id {}", id)
+            LOGGER.debug("REPOSITORY remove room by id {}", id)
             val sql = "DELETE FROM room WHERE roomId=?"
-            return jdbcOperations.update(sql)
+            return jdbcOperations.update(sql, id)
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY remove room by id {} error", id, e)
             throw RepositoryException("REPOSITORY remove room by id exception", e)
@@ -128,7 +140,7 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
 
     override fun updateRoomAvailability(roomId: UUID, isClosed: Boolean): Int {
         try {
-            LOGGER.error(
+            LOGGER.debug(
                 "REPOSITORY update room availability by params {}, {}",
                 roomId,
                 isClosed
@@ -143,9 +155,9 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
 
     override fun addParticipantToRoom(roomId: UUID, studentId: UUID): Int {
         try {
-            LOGGER.error("REPOSITORY add participants to room {}, {}", roomId, studentId)
+            LOGGER.debug("REPOSITORY add participants to room {}, {}", roomId, studentId)
             val sql =
-                "INSERT INTO room_students (roomId, studentId) VALUES(?, ?)"
+                "INSERT INTO room_users (roomId, studentId) VALUES(?, ?)"
             return jdbcOperations.update(sql, roomId, studentId)
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY add participants to room {}, {} error", roomId, studentId, e)
@@ -155,8 +167,8 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
 
     override fun removeParticipantFromRoom(roomId: UUID, studentId: UUID): Int {
         try {
-            LOGGER.error("REPOSITORY remove participants from room {}, {}", roomId, studentId)
-            val sql = "DELETE FROM room_students WHERE roomId=? AND studentId=?"
+            LOGGER.debug("REPOSITORY remove participants from room {}, {}", roomId, studentId)
+            val sql = "DELETE FROM room_users WHERE roomId=? AND studentId=?"
             return jdbcOperations.update(sql, roomId, studentId)
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY remove participants from room {}, {} error", roomId, studentId, e)
@@ -164,18 +176,35 @@ class PostgresRoomRepository(val jdbcOperations: JdbcOperations): IRoomRepositor
         }
     }
 
-    private fun getStudentsInRoom(roomId: UUID): List<UUID> {
-        val sql = "SELECT * FROM room_students WHERE roomId=?"
-        return jdbcOperations.query(sql,
+    override fun isStudentInRoom(roomId: UUID, studentId: UUID): Boolean {
+        try {
+            LOGGER.debug("REPOSITORY check if student is in the room {}, {}", roomId, studentId)
+            val sql = """
+            SELECT COUNT(*) FROM room_users 
+            WHERE roomId = ? AND userId = ? AND role = 'STUDENT'
+            """.trimIndent()
+            val count = jdbcOperations.queryForObject(sql, Int::class.java, roomId, studentId)
+            return count != null && count > 0
+        } catch (e: Exception) {
+            LOGGER.error("REPOSITORY check if student is in the room exception {}, {}", roomId, studentId)
+            throw RepositoryException("REPOSITORY remove participants from room exception", e)
+        }
+    }
+
+    fun getStudentsInRoom(roomId: UUID): List<UUID> {
+        val sql = "SELECT * FROM room_users WHERE roomId=?"
+        return jdbcOperations.query(
+            sql,
             { resultSet: ResultSet, i: Int ->
-            UUID.fromString(resultSet.getString("studentId"))
-        }, roomId
+                UUID.fromString(resultSet.getString("studentId"))
+            }, roomId
         )
     }
 
-    private fun getGamesInTheRoom(roomId: UUID): List<UUID> {
+    fun getGamesInTheRoom(roomId: UUID): List<UUID> {
         val sql = "SELECT * FROM game WHERE roomId=?"
-        return jdbcOperations.query(sql,
+        return jdbcOperations.query(
+            sql,
             { resultSet: ResultSet, i: Int ->
                 UUID.fromString(resultSet.getString("gameId"))
             }, roomId

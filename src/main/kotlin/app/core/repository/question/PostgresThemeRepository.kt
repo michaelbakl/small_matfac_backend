@@ -1,16 +1,22 @@
 package ru.baklykov.app.core.repository.question
 
 import app.core.exception.RepositoryException
+import app.core.repository.question.PostgresQuestionRepository
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.Cacheable
+import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
-import ru.baklykov.app.core.model.question.QuestionTheme
+import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
+import app.core.model.question.QuestionTheme
 import java.sql.ResultSet
 import java.util.*
 
-class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQuestionThemeRepository {
+@Transactional
+@Repository
+open class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQuestionThemeRepository {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(PostgresQuestionRepository::class.java)
 
@@ -23,13 +29,13 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         )
     }
 
-    override suspend fun saveTheme(theme: QuestionTheme): Int {
+    override fun saveTheme(theme: QuestionTheme): Int {
         try {
             LOGGER.debug("REPOSITORY create question theme {}", theme)
             val sql =
-                "INSERT INTO question_themes (theme_id, path, name, level) \n" +
-                        "            VALUES (?, ?, ?, ?)\n" +
-                        "            ON CONFLICT (theme_id) DO UPDATE \n" +
+                "INSERT INTO theme (themeId, path, name, level) \n" +
+                        "            VALUES (?, ?::ltree, ?, ?)\n" +
+                        "            ON CONFLICT (themeId) DO UPDATE \n" +
                         "            SET path = EXCLUDED.path, name = EXCLUDED.name, level = EXCLUDED.level"
             return jdbcOperations.update(sql, theme.id, theme.path, theme.name, theme.level)
         } catch (e: Exception) {
@@ -38,11 +44,11 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         }
     }
 
-    override suspend fun findById(themeId: UUID): QuestionTheme? {
+    override fun findById(themeId: UUID): QuestionTheme? {
         try {
             LOGGER.debug("REPOSITORY find question theme by id {}", themeId)
             val sql =
-                "SELECT * FROM question_themes WHERE theme_id = ?"
+                "SELECT * FROM theme WHERE themeId = ?"
             return jdbcOperations.queryForObject(sql, themeRowMapper, themeId)
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY find question theme by id {} error", themeId, e)
@@ -50,13 +56,13 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         }
     }
 
-    override suspend fun findByQuestionId(questionId: UUID): List<QuestionTheme> {
+    override fun findByQuestionId(questionId: UUID): List<QuestionTheme> {
         try {
             LOGGER.debug("REPOSITORY find question theme by question id {}", questionId)
             val sql =
-                "SELECT t.* FROM question_themes t\n" +
-                        "            JOIN question_theme_relations r ON t.theme_id = r.theme_id\n" +
-                        "            WHERE r.question_id = ?\n" +
+                "SELECT t.* FROM theme t\n" +
+                        "            JOIN question_theme_relations r ON t.themeId = r.themeId\n" +
+                        "            WHERE r.questionId = ?\n" +
                         "            ORDER BY t.path"
             return jdbcOperations.query(sql, themeRowMapper, questionId) ?: emptyList()
         } catch (e: Exception) {
@@ -65,11 +71,11 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         }
     }
 
-    override suspend fun searchThemes(query: String, limit: Int): List<QuestionTheme> {
+    override fun searchThemes(query: String, limit: Int): List<QuestionTheme> {
         try {
             LOGGER.debug("REPOSITORY find themes by query {} and limit {}", query, limit)
             val sql =
-                "SELECT * FROM question_themes \n" +
+                "SELECT * FROM theme \n" +
                         "            WHERE name ILIKE ? \n" +
                         "            ORDER BY path\n" +
                         "            LIMIT ?"
@@ -80,22 +86,46 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         }
     }
 
-    override suspend fun findChildThemes(parentThemeId: UUID): List<QuestionTheme> {
-        try {
+    override fun findChildThemes(parentThemeId: UUID): List<QuestionTheme> {
+        return try {
             LOGGER.debug("REPOSITORY find child themes by parent id {}", parentThemeId)
-            val parentPath = findById(parentThemeId)?.path ?: return emptyList()
-            val sql =
-                "SELECT * FROM question_themes \n" +
-                        "            WHERE path ~ ?\n" +
-                        "            ORDER BY path"
-            return jdbcOperations.query(sql, themeRowMapper, "$parentPath.*{1}") ?: emptyList()
+
+            val parentPath = findById(parentThemeId)?.takeIf { it.path.isNotBlank() }?.path
+                ?: return emptyList<QuestionTheme>().also {
+                    LOGGER.debug("Parent theme not found or has empty path: {}", parentThemeId)
+                }
+
+            val lqueryPattern = if (parentPath.contains("*")) {
+                LOGGER.warn("Potential unsafe ltree pattern in parent path: {}", parentPath)
+                "${parentPath.replace("*", "")}.*{1}"
+            } else {
+                "$parentPath.*{1}"
+            }
+
+            val sql = """
+            SELECT * FROM theme 
+            WHERE path ~ ?::lquery
+            AND NOT path ~ ?::lquery
+            ORDER BY path
+            """
+
+            jdbcOperations.query(
+                sql,
+                themeRowMapper,
+                lqueryPattern,
+                parentPath
+            ) ?: emptyList()
+
+        } catch (e: DataAccessException) {
+            LOGGER.error("Database error while finding child themes for parent: {}", parentThemeId, e)
+            throw RepositoryException("Failed to find child themes", e)
         } catch (e: Exception) {
-            LOGGER.error("REPOSITORY find child themes by parent id {} error", parentThemeId, e)
-            throw RepositoryException("REPOSITORY find child themes by parent id exception", e)
+            LOGGER.error("Unexpected error while finding child themes for parent: {}", parentThemeId, e)
+            throw RepositoryException("Unexpected error occurred", e)
         }
     }
 
-    override suspend fun getThemePath(themeId: UUID): List<QuestionTheme> {
+    override fun getThemePath(themeId: UUID): List<QuestionTheme> {
         try {
             LOGGER.debug("REPOSITORY get themes path as list by theme id {}", themeId)
             val theme = findById(themeId) ?: return emptyList()
@@ -104,7 +134,7 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
                 pathParts.take(i + 1).joinToString(".")
             }
             val sql =
-                "SELECT * FROM question_themes \n" +
+                "SELECT * FROM theme \n" +
                         "            WHERE path = ANY(?::ltree[])\n" +
                         "            ORDER BY level"
             return jdbcOperations.query(sql, themeRowMapper, paths.toTypedArray()) ?: emptyList()
@@ -114,11 +144,11 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         }
     }
 
-    override suspend fun addThemeToQuestion(questionId: UUID, themeId: UUID): Int {
+    override fun addThemeToQuestion(questionId: UUID, themeId: UUID): Int {
         try {
             LOGGER.debug("REPOSITORY add theme to question by id {} {}", questionId, themeId)
             val sql =
-                "INSERT INTO question_theme_relations (question_id, theme_id)\n" +
+                "INSERT INTO question_theme_relations (questionId, themeId)\n" +
                         "            VALUES (?, ?)\n" +
                         "            ON CONFLICT DO NOTHING"
             return jdbcOperations.update(sql, questionId, themeId)
@@ -128,12 +158,12 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         }
     }
 
-    override suspend fun removeThemeFromQuestion(questionId: UUID, themeId: UUID): Int {
+    override fun removeThemeFromQuestion(questionId: UUID, themeId: UUID): Int {
         try {
             LOGGER.debug("REPOSITORY removes theme from question by id {} {}", questionId, themeId)
             val sql =
                 "DELETE FROM question_theme_relations \n" +
-                        "            WHERE question_id = ? AND theme_id = ?"
+                        "            WHERE questionId = ? AND themeId = ?"
             return jdbcOperations.update(sql, questionId, themeId)
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY removes theme from question by id {} {} error", questionId, themeId, e)
@@ -141,13 +171,13 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         }
     }
 
-    override suspend fun getParentThemes(themeId: UUID): List<QuestionTheme> {
+    override fun getParentThemes(themeId: UUID): List<QuestionTheme> {
         try {
             LOGGER.debug("REPOSITORY get parent themes by theme id {}", themeId)
             val theme = findById(themeId) ?: return emptyList()
             if (theme.level <= 1) return emptyList()
             val sql =
-                "SELECT * FROM question_themes \n" +
+                "SELECT * FROM theme \n" +
                         "            WHERE path @> ?::ltree AND level < ?\n" +
                         "            ORDER BY level"
             return jdbcOperations.query(sql, themeRowMapper, theme.path, theme.level) ?: emptyList()
@@ -157,12 +187,12 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         }
     }
 
-    override suspend fun deleteTheme(themeId: UUID): Boolean {
+    override fun deleteTheme(themeId: UUID): Boolean {
         try {
             LOGGER.debug("REPOSITORY delete theme by theme id from database {}", themeId)
             val sql =
                 "WITH deleted AS (\n" +
-                        "                DELETE FROM question_themes \n" +
+                        "                DELETE FROM theme \n" +
                         "                WHERE themeId = ? \n" +
                         "                AND NOT EXISTS (\n" +
                         "                    SELECT 1 FROM question_theme_relations \n" +
@@ -177,14 +207,14 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
         }
     }
 
-    override suspend fun isDescendant(parentId: UUID, childId: UUID): Boolean {
+    override fun isDescendant(parentId: UUID, childId: UUID): Boolean {
         try {
             LOGGER.debug("REPOSITORY check if childId is a remnant of parentId {} {}", parentId, childId)
             val sql =
                 "SELECT EXISTS (\n" +
-                        "                SELECT 1 FROM question_themes parent\n" +
-                        "                JOIN question_themes child ON child.path <@ parent.path\n" +
-                        "                WHERE parent.theme_id = ? AND child.theme_id = ?\n" +
+                        "                SELECT 1 FROM theme parent\n" +
+                        "                JOIN theme child ON child.path <@ parent.path\n" +
+                        "                WHERE parent.themeId = ? AND child.themeId = ?\n" +
                         "            )"
             return jdbcOperations.queryForObject(sql, Boolean::class.java, parentId, childId) ?: false
         } catch (e: Exception) {
@@ -194,16 +224,16 @@ class PostgresThemeRepository(private val jdbcOperations: JdbcOperations) : IQue
     }
 
     @Cacheable("themePaths", key = "#path")
-    override suspend fun findIdByPath(path: String): UUID? {
+    override fun findIdByPath(path: String): UUID? {
         try {
             LOGGER.debug("REPOSITORY find theme id by ltree path {}", path)
             return jdbcOperations.query(
-                "SELECT theme_id FROM question_themes WHERE path = ? LIMIT 1",
-                { rs, _ -> rs.getObject("theme_id", UUID::class.java) },
+                "SELECT themeId FROM theme WHERE path ~ ?::lquery LIMIT 1",
+                { rs, _ -> rs.getObject("themeId", UUID::class.java) },
                 path
             ).firstOrNull()
         } catch (e: Exception) {
-            LOGGER.error("REPOSITORY find theme id by ltree path {}} error", path, e)
+            LOGGER.error("REPOSITORY find theme id by ltree path {} error", path, e)
             throw RepositoryException("REPOSITORY find theme id by ltree path exception", e)
         }
     }

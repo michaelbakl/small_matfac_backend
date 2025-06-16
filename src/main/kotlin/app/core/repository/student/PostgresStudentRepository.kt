@@ -6,16 +6,32 @@ import app.core.util.SqlQueryBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcOperations
-import org.springframework.jdbc.core.RowMapper
-import ru.baklykov.app.core.model.person.Student
-import ru.baklykov.app.core.model.person.StudentGroupInfo
+import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
+import ru.baklykov.app.core.converter.datetime.TimestampzConverter
+import app.core.model.person.Student
+import app.core.model.person.StudentGroupInfo
 import java.sql.ResultSet
 import java.sql.Timestamp
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
+@Repository
 open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations) : IStudentRepository {
     private val LOGGER: Logger = LoggerFactory.getLogger(PostgresStudentRepository::class.java)
+
+    private val rowMapper = { resultSet: ResultSet, i: Int ->
+        Student(
+            UUID.fromString(resultSet.getString("studentId")),
+            UUID.fromString(resultSet.getString("userId")),
+            resultSet.getString("surname"),
+            resultSet.getString("name"),
+            resultSet.getString("middleName"),
+            resultSet.getString("email"),
+            TimestampzConverter.convert(resultSet.getTimestamp("dateOfBirth")),
+            TimestampzConverter.convert(resultSet.getTimestamp("dateOfEntering"))
+        )
+    }
 
     override fun getStudentId(userId: UUID): UUID? {
         LOGGER.debug("REPOSITORY get student id by user id {}", userId)
@@ -31,6 +47,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
         }
     }
 
+    @Transactional(rollbackFor = [Exception::class])
     override fun addActualStudent(student: Student): Int {
         LOGGER.debug("REPOSITORY add actual student {}", student)
         try {
@@ -46,8 +63,8 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
                 student.name,
                 student.middleName,
                 student.email,
-                Timestamp.valueOf(student.dateOfBirth),
-                Timestamp.valueOf(student.dateOfEntering)
+                TimestampzConverter.convertFrom(student.dateOfBirth),
+                TimestampzConverter.convertFrom(student.dateOfEntering)
             )
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY Can`t add actual student {}", student)
@@ -55,7 +72,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
         }
     }
 
-    override fun addHistoryStudent(student: Student, dateOfChanging: LocalDateTime): Int {
+    override fun addHistoryStudent(student: Student, dateOfChanging: ZonedDateTime): Int {
         LOGGER.debug("REPOSITORY add history student {}", student)
         try {
             val sql =
@@ -70,9 +87,9 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
                 student.name,
                 student.middleName,
                 student.email,
-                Timestamp.valueOf(student.dateOfBirth),
-                Timestamp.valueOf(student.dateOfEntering),
-                Timestamp.valueOf(dateOfChanging)
+                TimestampzConverter.convertFrom(student.dateOfBirth),
+                TimestampzConverter.convertFrom(student.dateOfEntering),
+                TimestampzConverter.convertFrom(dateOfChanging)
             )
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY Can`t add history student {}", student)
@@ -93,8 +110,8 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
                 student.name,
                 student.middleName,
                 student.email,
-                Timestamp.valueOf(student.dateOfBirth),
-                Timestamp.valueOf(student.dateOfEntering),
+                TimestampzConverter.convertFrom(student.dateOfBirth),
+                TimestampzConverter.convertFrom(student.dateOfEntering),
                 student.personId
             )
         } catch (e: Exception) {
@@ -103,7 +120,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
         }
     }
 
-    override fun updateHistoryStudent(student: Student, dateOfChanging: LocalDateTime): Int {
+    override fun updateHistoryStudent(student: Student, dateOfChanging: ZonedDateTime): Int {
         LOGGER.debug("REPOSITORY update history student {}", student)
         try {
             val sql = "UPDATE student_versions " +
@@ -116,9 +133,9 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
                 student.name,
                 student.middleName,
                 student.email,
-                Timestamp.valueOf(student.dateOfBirth),
-                Timestamp.valueOf(student.dateOfEntering),
-                Timestamp.valueOf(dateOfChanging),
+                TimestampzConverter.convertFrom(student.dateOfBirth),
+                TimestampzConverter.convertFrom(student.dateOfEntering),
+                TimestampzConverter.convertFrom(dateOfChanging),
                 student.personId
             )
         } catch (e: Exception) {
@@ -133,22 +150,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
             val sql = "SELECT * FROM student WHERE studentId = ?"
             LOGGER.debug("REPOSITORY get actual student params: {} sql: {}", id, sql)
             val student: Student? =
-                jdbcOperations.queryForObject(
-                    sql,
-                    { resultSet: ResultSet, i: Int ->
-                        Student(
-                            UUID.fromString(resultSet.getString("studentId")),
-                            UUID.fromString(resultSet.getString("userId")),
-                            resultSet.getString("surname"),
-                            resultSet.getString("name"),
-                            resultSet.getString("middleName"),
-                            resultSet.getString("email"),
-                            resultSet.getTimestamp("dateOfBirth")!!.toLocalDateTime(),
-                            resultSet.getTimestamp("dateOfEntering")!!.toLocalDateTime()
-                        )
-                    },
-                    id
-                )
+                jdbcOperations.queryForObject(sql, rowMapper, id)
             return student
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY Can`t get actual student by id {}", id)
@@ -159,36 +161,62 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
     override fun getWithParams(filter: StudentFilter): List<Student> {
         LOGGER.debug("REPOSITORY get students by filter {}", filter)
         try {
-
-            // Добавить возможность выбирать по месту работы
-
             val sql = SqlQueryBuilder()
-                .select("*")
+                .select("DISTINCT student.*")
                 .from("student")
-                .join("student_group", "student.studentId=student_group.studentId ", filter.group?.toString())
-                .where("studentId", filter.studentId?.toString())
-                .where("userId", filter.id?.toString())
-                .where("surname", filter.surname)
-                .where("name", filter.name)
-                .where("middleName", filter.middleName)
-                .where("email", filter.email)
-                .where("dateOfBirth", filter.dateOfBirth?. let { Timestamp.valueOf(it).toString() })
-                .where("dateOfEntering", filter.dateOfEntering?. let { Timestamp.valueOf(it).toString() })
-                .where("student_group.groupId", filter.group?.toString())
-                .build()
+                .apply {
+                    filter.groups?.takeIf { it.isNotEmpty() }?.let { groups ->
+                        join("INNER", "student_group", "student.studentId = student_group.studentId", "1")
+                        `in`("student_group.groupId", groups.map { it.toString() })
+                    }
+                    filter.rooms?.takeIf { it.isNotEmpty() }?.let { rooms ->
+                        join("INNER", "room_users", "student.userId = room_users.userId", "1")
+                        `in`("room_users.roomId", rooms.map { it.toString() })
+                    }
+                    filter.games?.takeIf { it.isNotEmpty() }?.let { games ->
+                        join("INNER", "game_participants", "student.studentId = game_participants.studentId", "1")
+                        `in`("game_participants.gameId", games.map { it.toString() })
+                    }
 
-            val rowMapper: RowMapper<Student> = RowMapper<Student> { resultSet: ResultSet, rowIndex: Int ->
-                Student(
-                    UUID.fromString(resultSet.getString("studentId")),
-                    UUID.fromString(resultSet.getString("userId")),
-                    resultSet.getString("surname"),
-                    resultSet.getString("name"),
-                    resultSet.getString("middleName"),
-                    resultSet.getString("email"),
-                    resultSet.getTimestamp("dateOfBirth")?.toLocalDateTime().also { null },
-                    resultSet.getTimestamp("dateOfEntering")?.toLocalDateTime().also { null },
-                )
-            }
+                    filter.studentId?.let { where("student.studentId", it.toString()) }
+                    filter.id?.let { where("student.userId", it.toString()) }
+                    filter.surname?.let { where("student.surname", it) }
+                    filter.name?.let { where("student.name", it) }
+                    filter.middleName?.let { where("student.middleName", it) }
+                    filter.email?.let { where("student.email", it) }
+
+                    filter.dateOfBirthL?.let { start ->
+                        filter.dateOfBirthR?.let { end ->
+                            between(
+                                "student.dateOfBirth",
+                                Timestamp.from(start.toInstant()).toString(),
+                                Timestamp.from(end.toInstant()).toString()
+                            )
+                        } ?: where("student.dateOfBirth", Timestamp.from(start.toInstant()).toString(), operand = ">=")
+                    }
+                    filter.dateOfBirthR?.let { end ->
+                        if (filter.dateOfBirthL == null) {
+                            where("student.dateOfBirth", Timestamp.from(end.toInstant()).toString(), operand = "<=")
+                        }
+                    }
+
+                    filter.dateOfEnteringL?.let { start ->
+                        filter.dateOfEnteringR?.let { end ->
+                            between(
+                                "student.dateOfEntering",
+                                Timestamp.from(start.toInstant()).toString(),
+                                Timestamp.from(end.toInstant()).toString()
+                            )
+                        } ?: where("student.dateOfEntering", Timestamp.from(start.toInstant()).toString(), operand = ">=")
+                    }
+                    filter.dateOfEnteringR?.let { end ->
+                        if (filter.dateOfEnteringL == null) {
+                            where("student.dateOfEntering", Timestamp.from(end.toInstant()).toString(), operand = "<=")
+                        }
+                    }
+                }
+                .orderBy("student.surname")
+                .build()
             LOGGER.debug("REPOSITORY get students by filter: {} sql: {}", filter, sql)
             return jdbcOperations.query(sql, rowMapper)
         } catch (e: Exception) {
@@ -209,19 +237,19 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
         }
     }
 
-    override fun deleteHistoryStudent(id: UUID, dateOfChanging: LocalDateTime): Int {
+    override fun deleteHistoryStudent(id: UUID, dateOfChanging: ZonedDateTime): Int {
         LOGGER.debug("REPOSITORY delete history student params: {}, {}", id, dateOfChanging)
         try {
             val sql = "DELETE FROM student_versions WHERE studentId = ? AND dateOfChanging = ?"
             LOGGER.debug("REPOSITORY delete history student params: {}, {} sql: {}", id, dateOfChanging, sql)
-            return jdbcOperations.update(sql, id, Timestamp.valueOf(dateOfChanging))
+            return jdbcOperations.update(sql, id, TimestampzConverter.convertFrom(dateOfChanging))
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY Can`t delete history student by id {}", id)
             throw RepositoryException("REPOSITORY can`t get history student by id exception", e)
         }
     }
 
-    override fun getHistoryStudent(id: UUID, dateOfChanging: LocalDateTime): Student? {
+    override fun getHistoryStudent(id: UUID, dateOfChanging: ZonedDateTime): Student? {
         LOGGER.debug("REPOSITORY get history student by id {}", id)
         try {
 
@@ -230,22 +258,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
             val sql = "SELECT * FROM student_versions WHERE studentId = ? AND dateOfChanging = ?"
             LOGGER.debug("REPOSITORY get history student params: {} sql: {}", id, sql)
             val student: Student? =
-                jdbcOperations.queryForObject(
-                    sql,
-                    { resultSet: ResultSet, i: Int ->
-                        Student(
-                            UUID.fromString(resultSet.getString("studentId")),
-                            UUID.fromString(resultSet.getString("userId")),
-                            resultSet.getString("surname"),
-                            resultSet.getString("name"),
-                            resultSet.getString("middleName"),
-                            resultSet.getString("email"),
-                            resultSet.getTimestamp("dateOfBirth")!!.toLocalDateTime(),
-                            resultSet.getTimestamp("dateOfEntering")!!.toLocalDateTime()
-                        )
-                    },
-                    id, Timestamp.valueOf(dateOfChanging)
-                )
+                jdbcOperations.queryForObject(sql, rowMapper, id, TimestampzConverter.convertFrom(dateOfChanging))
             return student
         } catch (e: Exception) {
             LOGGER.error("REPOSITORY Can`t get history student by id {}", id)
@@ -257,8 +270,8 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
         studentGroupId: UUID,
         studentId: UUID,
         groupId: UUID,
-        startDate: LocalDateTime,
-        endDate: LocalDateTime?,
+        startDate: ZonedDateTime,
+        endDate: ZonedDateTime?,
         actual: Boolean
     ): Int {
         LOGGER.debug(
@@ -274,7 +287,12 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
             )
             return jdbcOperations.update(
                 sql,
-                studentGroupId, studentId, groupId, Timestamp.valueOf(startDate), Timestamp.valueOf(endDate), actual
+                studentGroupId,
+                studentId,
+                groupId,
+                TimestampzConverter.convertFrom(startDate),
+                TimestampzConverter.convertFrom(endDate),
+                actual
             )
         } catch (e: Exception) {
             LOGGER.error(
@@ -289,8 +307,8 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
         studentGroupId: UUID,
         studentId: UUID,
         groupId: UUID,
-        startDate: LocalDateTime,
-        endDate: LocalDateTime?,
+        startDate: ZonedDateTime,
+        endDate: ZonedDateTime?,
         actual: Boolean
     ): Int {
         LOGGER.debug(
@@ -307,8 +325,8 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
             return jdbcOperations.update(
                 sql,
                 groupId,
-                Timestamp.valueOf(startDate),
-                if (endDate != null) Timestamp.valueOf(endDate) else null,
+                TimestampzConverter.convertFrom(startDate),
+                if (endDate != null) TimestampzConverter.convertFrom(endDate) else null,
                 actual,
                 studentGroupId
             )
@@ -321,6 +339,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
         }
     }
 
+    //TODO(finish)
     override fun getStudentGroup(studentGroupId: UUID): StudentGroupInfo? {
         LOGGER.debug("REPOSITORY get student group info {}", studentGroupId)
         try {
@@ -335,8 +354,8 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
                             UUID.fromString(resultSet.getString("studentId")),
                             UUID.fromString(resultSet.getString("groupId")),
                             "groupName",
-                            resultSet.getTimestamp("startDate").toLocalDateTime(),
-                            resultSet.getTimestamp("endDate").toLocalDateTime() ?: null,
+                            TimestampzConverter.convert(resultSet.getTimestamp("startDate")) ?: ZonedDateTime.now(),
+                            TimestampzConverter.convert(resultSet.getTimestamp("endDate")),
                             resultSet.getBoolean("actual"),
                             null
                         )
@@ -362,7 +381,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
         }
     }
 
-    override fun addHistoryStudentGroup(historyId: UUID, studentGroupId: UUID, dateOfChanging: LocalDateTime): Int {
+    override fun addHistoryStudentGroup(historyId: UUID, studentGroupId: UUID, dateOfChanging: ZonedDateTime): Int {
         LOGGER.debug(
             "REPOSITORY add history student to group params: {}, {}, {}",
             historyId, studentGroupId, dateOfChanging
@@ -376,7 +395,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
             )
             return jdbcOperations.update(
                 sql,
-                historyId, studentGroupId, Timestamp.valueOf(dateOfChanging),
+                historyId, studentGroupId, TimestampzConverter.convertFrom(dateOfChanging),
             )
         } catch (e: Exception) {
             LOGGER.error(
@@ -387,7 +406,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
         }
     }
 
-    override fun updateHistoryStudentGroup(historyId: UUID, studentGroupId: UUID, dateOfChanging: LocalDateTime): Int {
+    override fun updateHistoryStudentGroup(historyId: UUID, studentGroupId: UUID, dateOfChanging: ZonedDateTime): Int {
         LOGGER.debug(
             "REPOSITORY update history student to group params: {}, {}, {}",
             historyId, studentGroupId, dateOfChanging
@@ -401,7 +420,7 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
             )
             return jdbcOperations.update(
                 sql,
-                studentGroupId, Timestamp.valueOf(dateOfChanging), historyId
+                studentGroupId, TimestampzConverter.convertFrom(dateOfChanging), historyId
             )
         } catch (e: Exception) {
             LOGGER.error(
@@ -429,10 +448,10 @@ open class PostgresStudentRepository(private val jdbcOperations: JdbcOperations)
                             UUID.fromString(resultSet.getString("studentId")),
                             UUID.fromString(resultSet.getString("groupId")),
                             getGroupName(resultSet.getString("groupId"))!!,
-                            resultSet.getTimestamp("startDate").toLocalDateTime(),
-                            resultSet.getTimestamp("endDate").toLocalDateTime() ?: null,
+                            TimestampzConverter.convert(resultSet.getTimestamp("startDate")) ?: ZonedDateTime.now(),
+                            TimestampzConverter.convert(resultSet.getTimestamp("endDate")),
                             resultSet.getBoolean("actual"),
-                            resultSet.getTimestamp("dateOfChanging").toLocalDateTime()
+                            TimestampzConverter.convert(resultSet.getTimestamp("dateOfChanging"))
                         )
                     },
                     historyId

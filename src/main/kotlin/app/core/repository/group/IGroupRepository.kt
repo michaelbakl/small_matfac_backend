@@ -1,7 +1,7 @@
 package app.core.repository.group
 
 import app.web.model.response.group.GetGroupInfoResponse
-import ru.baklykov.app.core.model.GroupInfo
+import app.core.model.GroupInfo
 import java.sql.Timestamp
 import java.util.*
 

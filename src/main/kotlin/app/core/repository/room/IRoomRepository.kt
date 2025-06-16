@@ -1,8 +1,7 @@
 package ru.baklykov.app.core.repository.room
 
-import ru.baklykov.app.core.model.question.Question
-import ru.baklykov.app.core.model.Room
-import java.time.LocalDateTime
+import app.core.model.Room
+import java.time.ZonedDateTime
 import java.util.*
 
 interface IRoomRepository {
@@ -26,14 +25,13 @@ interface IRoomRepository {
      * @param id - UUID of the room
      * @return found room or null
      */
-    fun getRoomById(id: UUID): Room?
+    fun getRoomById(id: UUID): Room
 
     /**
      * @param id - room id
      * @param name - room name
      * @param teacherId - id of creator
      * @param students - participants in the room
-     * @param questions - questions in the room
      * @param isClosed - true if closed, false if available
      * @param startDate - date of starting the room (room is available when start)
      * @param finishDate - date of closing the room (becomes unavailable)
@@ -43,10 +41,9 @@ interface IRoomRepository {
         name: String?,
         teacherId: UUID?,
         students: List<UUID>?,
-        questions: List<Question>?,
         isClosed: Boolean?,
-        startDate: LocalDateTime?,
-        finishDate: LocalDateTime?
+        startDate: ZonedDateTime?,
+        finishDate: ZonedDateTime?
     ): List<Room>
 
     /**
@@ -79,5 +76,7 @@ interface IRoomRepository {
      * @return updated room
      */
     fun removeParticipantFromRoom(roomId: UUID, studentId: UUID): Int
+
+    fun isStudentInRoom(roomId: UUID, studentId: UUID): Boolean
 
 }

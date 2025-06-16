@@ -1,6 +1,6 @@
-package ru.baklykov.app.core.repository.answer
+package app.core.repository.answer
 
-import ru.baklykov.app.core.model.Answer
+import app.core.model.Answer
 import java.util.*
 
 interface IAnswerRepository {
@@ -56,4 +56,11 @@ interface IAnswerRepository {
      * @return 1 if removed, 0 otherwise
      */
     fun removePictureFromAnswer(answerId: UUID, pictureId: UUID): Int
+
+    /**
+     * finds answer by text
+     * @param text - text of the answer
+     * @return answer object if found, null otherwise
+     */
+    fun findByText(text: String): Answer?
 }

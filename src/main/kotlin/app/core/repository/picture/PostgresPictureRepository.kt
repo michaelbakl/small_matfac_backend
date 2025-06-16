@@ -4,10 +4,12 @@ import app.core.exception.RepositoryException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.stereotype.Repository
 import ru.baklykov.app.core.model.Picture
 import java.sql.ResultSet
 import java.util.*
 
+@Repository
 open class PostgresPictureRepository(private val jdbcOperations: JdbcOperations): IPictureRepository {
     private val LOGGER: Logger = LoggerFactory.getLogger(PostgresPictureRepository::class.java)
 

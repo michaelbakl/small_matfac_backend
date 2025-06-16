@@ -1,8 +1,8 @@
-package ru.baklykov.app.core.repository.game
+package app.core.repository.game
 
-import ru.baklykov.app.core.model.game.Game
-import ru.baklykov.app.core.model.game.GameConfig
-import ru.baklykov.app.core.model.game.GameType
+import app.core.filter.GameFilter
+import app.core.model.game.Game
+import app.core.model.game.GameConfig
 import java.time.ZonedDateTime
 import java.util.*
 
@@ -46,23 +46,9 @@ interface IGameRepository {
     fun getGameById(id: UUID): Game
 
     /**
-     * @param id - game id
-     * @param roomId - id  of the room which in game is being played
-     * @param name - game name
-     * @param status - game status
-     * @param gameType - type of the game
-     * @param startDate - date of starting the game (game is available to play)
-     * @param finishDate - date of closing the game (becomes unavailable)
+     * @param filter - contains information for games
      */
-    fun getGamesWithParams(
-        id: UUID?,
-        roomId: UUID?,
-        name: String?,
-        status: String?,
-        gameType: GameType?,
-        startDate: ZonedDateTime?,
-        finishDate: ZonedDateTime?
-    ): List<Game>
+    fun getGamesWithParams(filter: GameFilter): List<Game>
 
     /**
      * deletes game by id
@@ -90,24 +76,18 @@ interface IGameRepository {
 
     /**
      * adds question to game
-     * @param gameId - id of the room
+     * @param gameId - id of the game
      * @param questionId - question id to add to the room
      * @return 1 if added, 0 otherwise
      */
     fun addQuestionToGame(gameId: UUID, questionId: UUID): Int
 
     /**
-     * adds questions to the room
-     * @param roomId - id of the room
-     * @param questionId - question id to remove to the room
-     * @return updated room
+     * adds questions to the game
+     * @param gameId - id of the game
+     * @param questionId - question id to remove to the game
+     * @return 1 if removed, 0 otherwise
      */
-    fun removeQuestionFromGame(roomId: UUID, questionId: UUID): Game
+    fun removeQuestionFromGame(gameId: UUID, questionId: UUID): Int
 
-    /**
-     * makes game available to all players in the room, game is played in
-     * @param gameId - id of the game to start the game
-     * @return 1 if success, 0 otherwise
-     */
-    fun startGame(gameId: UUID): Int
 }

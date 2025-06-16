@@ -1,18 +1,24 @@
-package ru.baklykov.app.core.repository.question
+package app.core.repository.question
 
 import app.core.exception.NotFoundException
 import app.core.exception.RepositoryException
 import app.core.util.SqlQueryBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Pageable
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
+import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
-import ru.baklykov.app.core.model.question.Question
-import ru.baklykov.app.web.model.dto.answer.AnswerDto
+import app.core.model.question.Question
+import app.web.model.dto.answer.AnswerDto
+import org.springframework.dao.DataAccessException
+import org.springframework.dao.EmptyResultDataAccessException
+import ru.baklykov.app.core.repository.question.IQuestionRepository
 import java.sql.ResultSet
 import java.util.*
 
+@Repository
 open class PostgresQuestionRepository(private val jdbcOperations: JdbcOperations) : IQuestionRepository {
 
     private val LOGGER: Logger = LoggerFactory.getLogger(PostgresQuestionRepository::class.java)
@@ -22,8 +28,9 @@ open class PostgresQuestionRepository(private val jdbcOperations: JdbcOperations
             questionId = rs.getObject("questionId", UUID::class.java),
             ownerId = rs.getObject("ownerId", UUID::class.java),
             title = rs.getString("title"),
-            type = rs.getString("question_type"),
-            pictures = getQuestionsPicturesIds(rs.getObject("questionId", UUID::class.java)),
+            type = rs.getString("type"),
+            //pictures = getQuestionsPicturesIds(rs.getObject("questionId", UUID::class.java)),
+            pictures = emptyList(),
             description = rs.getString("description"),
             answers = getQuestionsAnswers(rs.getObject("questionId", UUID::class.java))
         )
@@ -33,7 +40,7 @@ open class PostgresQuestionRepository(private val jdbcOperations: JdbcOperations
         AnswerDto(
             rs.getObject("answerId", UUID::class.java),
             rs.getString("description"),
-            rs.getBoolean("isRight"),
+            rs.getBoolean("isright"),
             rs.getInt("points")
         )
     }
@@ -41,14 +48,13 @@ open class PostgresQuestionRepository(private val jdbcOperations: JdbcOperations
     override fun addQuestion(question: Question): Int {
         LOGGER.debug("REPOSITORY add question {}", question)
         try {
-            val sql =
-                "INSERT INTO question (questionId, ownerId, title, description)" +
-                        " VALUES (?, ?, ?, ?)"
+            val sql = "INSERT INTO question (questionId, ownerId, type, title, description) VALUES (?, ?, ?::question_type, ?, ?)"
             LOGGER.debug("REPOSITORY add question params: {} sql: {}", question, sql)
             return jdbcOperations.update(
                 sql,
                 question.questionId,
                 question.ownerId,
+                question.type,
                 question.title,
                 question.description
             )
@@ -176,14 +182,171 @@ open class PostgresQuestionRepository(private val jdbcOperations: JdbcOperations
         }
     }
 
+    override fun countByTitleContaining(query: String): Long {
+        LOGGER.debug("REPOSITORY count by title containing {}", query)
+        try {
+
+            val sql = "SELECT COUNT(*) FROM question WHERE title ILIKE ?"
+
+            LOGGER.debug("REPOSITORY count by title containing {} sql {}", query, sql)
+            return jdbcOperations.queryForObject(sql, Long::class.java, "%$query%") ?: 0
+        } catch (e: Exception) {
+            LOGGER.error("REPOSITORY error counting by title containing {}", query)
+            throw RepositoryException("REPOSITORY count by title containing exception", e)
+        }
+    }
+
+    override fun countByTeacherId(teacherId: UUID): Long {
+        LOGGER.debug("REPOSITORY count by teacher id  {}", teacherId)
+        try {
+
+            val sql = "SELECT COUNT(*) FROM question q\n" +
+                    "            JOIN question_teacher qt ON q.question_id = qt.question_id\n" +
+                    "            WHERE qt.teacher_id = ?"
+
+            LOGGER.debug("REPOSITORY count by teacher id {} sql {}", teacherId, sql)
+            return jdbcOperations.queryForObject(sql, Long::class.java, teacherId) ?: 0
+        } catch (e: Exception) {
+            LOGGER.error("REPOSITORY error counting by teacher id  {}", teacherId)
+            throw RepositoryException("REPOSITORY count by teacher id exception", e)
+        }
+    }
+
+    override fun countByThemeIds(themeIds: List<UUID>): Long {
+        LOGGER.debug("REPOSITORY count by theme ids  {}", themeIds)
+        try {
+
+            val sql = "SELECT COUNT(DISTINCT q.question_id) FROM question q\n" +
+                    "            JOIN question_theme_relations qtr ON q.question_id = qtr.question_id\n" +
+                    "            WHERE qtr.theme_id = ANY(?)"
+
+            LOGGER.debug("REPOSITORY count by theme ids {} sql {}", themeIds, sql)
+            return jdbcOperations.queryForObject(sql, Long::class.java, themeIds.toTypedArray()) ?: 0
+        } catch (e: Exception) {
+            LOGGER.error("REPOSITORY error counting by theme ids  {}", themeIds)
+            throw RepositoryException("REPOSITORY count by theme ids exception", e)
+        }
+    }
+
+    override fun existsByIdAndTeacherId(questionId: UUID, teacherId: UUID): Boolean {
+        LOGGER.debug("REPOSITORY check exists by id and teacher id  {} {}", questionId, teacherId)
+        try {
+
+            val sql = "SELECT EXISTS(\n" +
+                    "                SELECT 1 FROM question_teacher \n" +
+                    "                WHERE question_id = ? AND teacher_id = ?\n" +
+                    "            )"
+
+            LOGGER.debug("REPOSITORY check exists by id and teacher id  {} {} sql {}", questionId, teacherId, sql)
+            return jdbcOperations.queryForObject(sql, Boolean::class.java, questionId, teacherId) ?: false
+        } catch (e: Exception) {
+            LOGGER.error("REPOSITORY error check exists by id and teacher id  {} {}", questionId, teacherId)
+            throw RepositoryException("REPOSITORY check exists by id and teacher id exception", e)
+        }
+    }
+
+    override fun findByThemeId(themeId: UUID, pageable: Pageable): List<Question> {
+        LOGGER.debug("REPOSITORY find questions by theme id pageable {} {}", themeId, pageable)
+        try {
+
+            val sql = "SELECT q.* FROM question q\n" +
+                    "            JOIN question_theme_relations qtr ON q.question_id = qtr.question_id\n" +
+                    "            WHERE qtr.theme_id = ?\n" +
+                    "            ORDER BY q.created_at DESC\n" +
+                    "            LIMIT ? OFFSET ?"
+
+            LOGGER.debug("REPOSITORY find by theme id pageable {} {} sql {}", themeId, pageable, sql)
+
+            return jdbcOperations.query(sql, questionRowMapper, themeId, pageable.pageSize, pageable.offset) ?: emptyList()
+        } catch (e: Exception) {
+            LOGGER.error("REPOSITORY error finding questions by theme id pageable {} {}", themeId, pageable)
+            throw RepositoryException("REPOSITORY find questions by theme pageable id exception", e)
+        }
+    }
+
+    override fun findByThemeId(themeId: UUID): List<Question> {
+        LOGGER.debug("REPOSITORY find questions by theme id {}", themeId)
+        try {
+
+            val sql = "SELECT q.* FROM question q\n" +
+                    "            JOIN question_theme_relations qtr ON q.question_id = qtr.question_id\n" +
+                    "            WHERE qtr.theme_id = ?\n" +
+                    "            ORDER BY q.created_at DESC"
+
+            LOGGER.debug("REPOSITORY find by theme id {} sql {}", themeId, sql)
+
+            return jdbcOperations.query(sql, questionRowMapper, themeId) ?: emptyList()
+        } catch (e: Exception) {
+            LOGGER.error("REPOSITORY error finding questions by theme id  {}", themeId)
+            throw RepositoryException("REPOSITORY find questions by theme id exception", e)
+        }
+    }
+
+    override fun findByTitleContaining(query: String, pageable: Pageable): List<Question> {
+        LOGGER.debug("REPOSITORY find questions by title with mask paginated {} {}", query, pageable)
+        try {
+
+            val sql = "SELECT * FROM question \n" +
+                    "            WHERE title ILIKE ? \n" +
+                    "            ORDER BY title DESC\n" +
+                    "            LIMIT ? OFFSET ?"
+
+            LOGGER.debug("REPOSITORY find questions by title with mask paginated {} {} sql {}", query, pageable, sql)
+
+            return jdbcOperations.query(sql, questionRowMapper, "%$query%", pageable.pageSize, pageable.offset)
+                ?: emptyList()
+        } catch (e: Exception) {
+            LOGGER.error("REPOSITORY error finding questions by title with mask paginated {} {}", query, pageable)
+            throw RepositoryException("REPOSITORY find questions by title with mask paginated exception", e)
+        }
+    }
+
+    override fun findByTitleContaining(query: String): List<Question> {
+        LOGGER.debug("REPOSITORY find questions by title with mask {}", query)
+        try {
+
+            val sql = "SELECT * FROM question \n" +
+                    "            WHERE title ILIKE ? \n" +
+                    "            ORDER BY title DESC"
+
+            LOGGER.debug("REPOSITORY find questions by title with mask {} sql {}", query, sql)
+
+            return jdbcOperations.query(sql, questionRowMapper, "%$query%") ?: emptyList()
+        } catch (e: Exception) {
+            LOGGER.error("REPOSITORY error finding questions by title with mask {}", query)
+            throw RepositoryException("REPOSITORY find questions by title with mask exception", e)
+        }
+    }
+
+    override fun findByTitleAndDescription(title: String, description: String): Question? {
+        LOGGER.debug("REPOSITORY find question by title and description: {}, {}", title, description)
+        try {
+            val sql = "SELECT * FROM question WHERE title = ? AND description = ? LIMIT 1"
+            return jdbcOperations.queryForObject(sql, questionRowMapper, title, description)
+        } catch (e: EmptyResultDataAccessException) {
+            LOGGER.debug("REPOSITORY not found question by title and description: {}, {}", title, description)
+            return null
+        }
+        catch (e: DataAccessException) {
+            LOGGER.error("REPOSITORY Error finding question by title and description: {}, {}", title, description)
+            throw RepositoryException("REPOSITORY Error finding question by title and description", e)
+        }
+    }
+
+
     private fun getQuestionsPicturesIds(questionId: UUID): List<UUID> {
         val sql = "SELECT * FROM question_picture WHERE questionId=?"
         return jdbcOperations.query(sql, { rs, _ -> rs.getObject("pictureId", UUID::class.java) }, questionId)
     }
 
     private fun getQuestionsAnswers(questionId: UUID): List<AnswerDto> {
-        val sql = "SELECT * FROM answer JOIN question_answer ON answer.answerId=question_answer.answerId WHERE questionId=?"
-        return jdbcOperations.query(sql, answerDtoMapper)
+        try {
+            val sql =
+                "SELECT * FROM answer INNER JOIN question_answer ON answer.answerId=question_answer.answerId WHERE question_answer.questionId=?"
+            return jdbcOperations.query(sql, answerDtoMapper, questionId)
+        } catch (e: Exception){
+            return emptyList()
+        }
     }
 
 }
